@@ -10,14 +10,7 @@ import {
   invalidateUserMe,
   setMarketingConsent,
 } from "./Api";
-import {
-  discordLogin,
-  googleLogin,
-  linkGoogle,
-  logOut,
-  reauthAfterCrazyGamesChange,
-  sendMagicLink,
-} from "./Auth";
+import { logOut, reauthAfterCrazyGamesChange, sendMagicLink } from "./Auth";
 import "./components/baseComponents/stats/DiscordUserHeader";
 import "./components/baseComponents/stats/PlayerGameHistoryView";
 import type { PlayerGameHistoryCache } from "./components/baseComponents/stats/PlayerGameHistoryView";
@@ -239,21 +232,7 @@ export class AccountModal extends BaseModal {
   // email with the current session — the "new-association" path), or linking a
   // Google account. Reuses the login form's email field/handlers.
   private renderEmailBinding(): TemplateResult {
-    return html`
-      <div class="mt-4 space-y-3">
-        ${this.renderEmailField()}
-        <div class="flex items-center gap-4 py-1">
-          <div class="h-px bg-white/10 flex-1"></div>
-          <span
-            class="text-[10px] uppercase tracking-widest text-white/30 font-bold"
-          >
-            ${translateText("account_modal.or")}
-          </span>
-          <div class="h-px bg-white/10 flex-1"></div>
-        </div>
-        ${this.renderLinkGoogleButton()}
-      </div>
-    `;
+    return html` <div class="mt-4 space-y-3">${this.renderEmailField()}</div> `;
   }
 
   // Shared email input + "get magic link" button, used by both the sign-in form
@@ -558,28 +537,7 @@ export class AccountModal extends BaseModal {
         </div>
       `;
     }
-    return this.renderLinkGoogleButton();
-  }
-
-  // Shown when logged in without a Google identity yet. Lets the user attach
-  // Google to their existing account (we never auto-merge by email).
-  private renderLinkGoogleButton(): TemplateResult {
-    if (this.userMeResponse?.user?.google) return html``;
-    return html`
-      <button
-        @click=${this.handleLinkGoogle}
-        class="w-full px-6 py-3 text-[#1f1f1f] bg-white hover:bg-[#f7f8f8] border border-[#dadce0] rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4] transition-colors duration-200 flex items-center justify-center gap-3 shadow-lg"
-      >
-        <img
-          src=${assetUrl("images/GoogleLogo.svg")}
-          alt=${translateText("account_modal.google_alt")}
-          class="w-5 h-5"
-        />
-        <span class="font-bold tracking-wide"
-          >${translateText("account_modal.link_google")}</span
-        >
-      </button>
-    `;
+    return html``;
   }
 
   private async viewGame(gameId: string): Promise<void> {
@@ -675,50 +633,7 @@ export class AccountModal extends BaseModal {
           </div>
 
           <div class="space-y-6">
-            <!-- Discord Login Button -->
-            <button
-              @click="${this.handleDiscordLogin}"
-              class="w-full px-6 py-4 text-white bg-[#5865F2] hover:bg-[#4752C4] border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5865F2] transition-colors duration-200 flex items-center justify-center gap-3 group relative overflow-hidden shadow-lg hover:shadow-[#5865F2]/20"
-            >
-              <img
-                src=${assetUrl("images/DiscordLogo.svg")}
-                alt="Discord"
-                class="w-6 h-6 relative z-10"
-              />
-              <span class="font-bold relative z-10 tracking-wide"
-                >${translateText("main.login_discord") ||
-                translateText("account_modal.link_discord")}</span
-              >
-            </button>
-
-            <!-- Google Login Button (Google brand guidelines: white surface,
-                 dark text, the multicolor "G" mark) -->
-            <button
-              @click="${this.handleGoogleLogin}"
-              class="w-full px-6 py-4 text-[#1f1f1f] bg-white hover:bg-[#f7f8f8] border border-[#dadce0] rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4285F4] transition-colors duration-200 flex items-center justify-center gap-3 group relative overflow-hidden shadow-lg"
-            >
-              <img
-                src=${assetUrl("images/GoogleLogo.svg")}
-                alt=${translateText("account_modal.google_alt")}
-                class="w-6 h-6 relative z-10"
-              />
-              <span class="font-bold relative z-10 tracking-wide"
-                >${translateText("main.login_google")}</span
-              >
-            </button>
-
-            <!-- Divider -->
-            <div class="flex items-center gap-4 py-2">
-              <div class="h-px bg-white/10 flex-1"></div>
-              <span
-                class="text-[10px] uppercase tracking-widest text-white/30 font-bold"
-              >
-                ${translateText("account_modal.or")}
-              </span>
-              <div class="h-px bg-white/10 flex-1"></div>
-            </div>
-
-            <!-- Email Recovery -->
+            <!-- Operator-owned email authentication -->
             <div class="space-y-3">${this.renderEmailField()}</div>
           </div>
 
@@ -770,24 +685,6 @@ export class AccountModal extends BaseModal {
     if (userMe) this.userMeResponse = userMe;
     this.crazyGamesUser = profile;
     this.requestUpdate();
-  }
-
-  private handleDiscordLogin() {
-    discordLogin();
-  }
-
-  private handleGoogleLogin() {
-    googleLogin();
-  }
-
-  private async handleLinkGoogle(): Promise<void> {
-    // On success linkGoogle navigates to Google; the result comes back as a
-    // `link=...` router arg handled in handleLinkResult. A false return means we
-    // couldn't start it.
-    const started = await linkGoogle();
-    if (!started) {
-      alert(translateText("account_modal.link_google_failed"));
-    }
   }
 
   // The Google link callback returns us to #modal=account&link=<result>, so the

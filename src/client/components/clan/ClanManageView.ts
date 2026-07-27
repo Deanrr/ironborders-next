@@ -371,30 +371,6 @@ export class ClanManageView extends LitElement {
               class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-malibu-blue/50 focus:border-malibu-blue/50 transition-all font-medium hover:bg-white/10 text-sm resize-none"
             ></textarea>
           </div>
-          ${this.myRole === "leader"
-            ? html`
-                <div>
-                  <label
-                    class="block text-[10px] font-bold text-white/40 uppercase tracking-wider mb-2"
-                    >${translateText("clan_modal.discord_url_label")}</label
-                  >
-                  <input
-                    type="url"
-                    .value=${this.manageDiscordUrl}
-                    @input=${(e: Event) =>
-                      (this.manageDiscordUrl = (
-                        e.target as HTMLInputElement
-                      ).value)}
-                    placeholder="https://discord.gg/..."
-                    maxlength="255"
-                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-malibu-blue/50 focus:border-malibu-blue/50 transition-all font-medium hover:bg-white/10 text-sm"
-                  />
-                  <p class="text-white/40 text-xs mt-2">
-                    ${translateText("clan_modal.discord_url_hint")}
-                  </p>
-                </div>
-              `
-            : ""}
           <div class="flex items-center justify-between">
             <div>
               <div class="text-white text-sm font-bold">

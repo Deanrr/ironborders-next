@@ -9,7 +9,7 @@ function setBootstrapConfig() {
     gameEnv: "prod",
     numWorkers: 1,
     turnstileSiteKey: "x",
-    jwtAudience: "openfront.dev",
+    jwtAudience: "ironborders.example",
     instanceId: "d",
     gitCommit: "t",
   };
@@ -31,8 +31,8 @@ describe("Steam login", () => {
       jti: "some-id",
       sub: "AAAAAAAAAAAAAAAAAAAAAA",
       iat: Math.floor(Date.now() / 1000),
-      iss: "https://api.openfront.dev",
-      aud: "openfront.dev",
+      iss: "https://api.ironborders.example",
+      aud: "ironborders.example",
       exp: Math.floor(Date.now() / 1000) + 3600,
     }).encode();
 

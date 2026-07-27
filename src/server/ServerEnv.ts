@@ -85,6 +85,7 @@ export class ServerEnv {
   }
   static jwtIssuer(): string {
     const audience = ServerEnv.jwtAudience();
+    ServerEnv.assertOwnerControlledAudience(audience);
     return audience === "localhost"
       ? "http://localhost:8787"
       : `https://api.${audience}`;
@@ -168,6 +169,23 @@ export class ServerEnv {
   }
   static apiKey(): string {
     return process.env.API_KEY ?? "";
+  }
+  static joinVerificationEnabled(): boolean {
+    return process.env.JOIN_VERIFICATION_ENABLED === "true";
+  }
+
+  private static assertOwnerControlledAudience(audience: string): void {
+    const hostname = audience.toLowerCase();
+    if (
+      hostname === "openfront.io" ||
+      hostname.endsWith(".openfront.io") ||
+      hostname === "openfront.dev" ||
+      hostname.endsWith(".openfront.dev")
+    ) {
+      throw new Error(
+        "Refusing to connect to an OpenFront production audience. Configure DOMAIN for an operator-owned host.",
+      );
+    }
   }
   // Long-lived shared secret for the trusted admin bot HTTP API.
   // Undefined when unset, which disables the admin bot API entirely.

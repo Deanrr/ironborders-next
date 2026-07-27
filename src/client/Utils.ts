@@ -15,7 +15,7 @@ import { GameConfig } from "../core/Schemas";
 import type { LangSelector } from "./LangSelector";
 import { Platform } from "./Platform";
 
-export const TUTORIAL_VIDEO_URL = "https://www.youtube.com/embed/7J5zwb_s_Cg";
+export const TUTORIAL_VIDEO_URL = "/tutorial.html";
 
 export function normaliseMapKey(mapName: string): string {
   return mapName.toLowerCase().replace(/[\s.]+/g, "");
@@ -679,24 +679,7 @@ export function getDiscordAvatarUrl(user: {
   avatar: string | null;
   discriminator?: string;
 }): string | null {
-  if (user.avatar) {
-    // - id is a Discord numeric string
-    // - avatar is a hash, optionally prefixed with "a_" for animated avatars
-    const validId = /^\d+$/.test(user.id);
-    const validAvatar =
-      /^[a-f0-9]+$/.test(user.avatar) || /^a_[a-f0-9]+$/.test(user.avatar);
-
-    if (validId && validAvatar) {
-      const extension = user.avatar.startsWith("a_") ? "gif" : "png";
-      return `https://cdn.discordapp.com/avatars/${encodeURIComponent(user.id)}/${encodeURIComponent(user.avatar)}.${extension}?size=64`;
-    }
-  }
-
-  if (user.discriminator !== undefined) {
-    const idx = Number(user.discriminator) % 5;
-    return `https://cdn.discordapp.com/embed/avatars/${idx}.png`;
-  }
-
+  void user;
   return null;
 }
 export function calculateServerTimeOffset(

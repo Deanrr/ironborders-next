@@ -15,7 +15,9 @@ export function renderMarkdown(
   const rawHTML = marked.parse(rawMarkdown, { async: false });
   const cleanHTML = DOMPurify.sanitize(
     rawHTML,
-    options?.includeImages ? {} : { FORBID_TAGS: ["img"] },
+    options?.includeImages
+      ? { FORBID_ATTR: ["href", "src"] }
+      : { FORBID_ATTR: ["href"], FORBID_TAGS: ["img"] },
   );
   return unsafeHTML(cleanHTML);
 }

@@ -38,29 +38,43 @@ describe("deriveServerWsBase", () => {
 
   describe("desktop build (explicit serverHost) targets the real game server", () => {
     it("targets the packaged prod host over wss", () => {
-      expect(deriveServerWsBase("openfront.io", "app:", "openfront")).toBe(
-        "wss://openfront.io",
-      );
+      expect(
+        deriveServerWsBase("game.ironborders.example", "app:", "ironborders"),
+      ).toBe("wss://game.ironborders.example");
     });
 
     it("targets the dev default host over wss", () => {
       expect(
-        deriveServerWsBase("main.openfront.dev", "app:", "openfront"),
-      ).toBe("wss://main.openfront.dev");
+        deriveServerWsBase(
+          "staging.ironborders.example",
+          "app:",
+          "ironborders",
+        ),
+      ).toBe("wss://staging.ironborders.example");
     });
 
     it("targets a branch-specific subdomain over wss", () => {
       expect(
-        deriveServerWsBase("my-feature.openfront.dev", "app:", "openfront"),
-      ).toBe("wss://my-feature.openfront.dev");
+        deriveServerWsBase(
+          "feature.ironborders.example",
+          "app:",
+          "ironborders",
+        ),
+      ).toBe("wss://feature.ironborders.example");
     });
 
     it("ignores location entirely when a serverHost is configured", () => {
       // Even under http/https, an explicit host wins — the desktop origin
       // (app:) must never fall through to window.location.host.
-      expect(deriveServerWsBase("openfront.io", "https:", "openfront")).toBe(
-        "wss://openfront.io",
-      );
+      expect(
+        deriveServerWsBase("game.ironborders.example", "https:", "ironborders"),
+      ).toBe("wss://game.ironborders.example");
+    });
+
+    it("rejects an upstream host", () => {
+      expect(() =>
+        deriveServerWsBase("openfront.io", "app:", "ironborders"),
+      ).toThrow("Refusing to connect to an OpenFront production audience");
     });
   });
 });

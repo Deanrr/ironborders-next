@@ -56,8 +56,8 @@ describe("ServerEnv.jwtAudience", () => {
   });
 
   test("returns DOMAIN when set", () => {
-    vi.stubEnv("DOMAIN", "openfront.io");
-    expect(ServerEnv.jwtAudience()).toBe("openfront.io");
+    vi.stubEnv("DOMAIN", "ironborders.example");
+    expect(ServerEnv.jwtAudience()).toBe("ironborders.example");
   });
 
   test("throws when DOMAIN unset", () => {
@@ -77,8 +77,15 @@ describe("ServerEnv.jwtIssuer", () => {
   });
 
   test("derives api.<audience> for non-localhost", () => {
+    vi.stubEnv("DOMAIN", "ironborders.example");
+    expect(ServerEnv.jwtIssuer()).toBe("https://api.ironborders.example");
+  });
+
+  test("rejects an upstream audience", () => {
     vi.stubEnv("DOMAIN", "openfront.io");
-    expect(ServerEnv.jwtIssuer()).toBe("https://api.openfront.io");
+    expect(() => ServerEnv.jwtIssuer()).toThrow(
+      "Refusing to connect to an OpenFront production audience",
+    );
   });
 });
 

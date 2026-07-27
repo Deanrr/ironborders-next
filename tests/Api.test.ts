@@ -40,15 +40,17 @@ describe("getApiBase localhost fallback", () => {
 describe("getAudience / getApiBase from BOOTSTRAP_CONFIG", () => {
   beforeEach(() => ClientEnv.reset());
 
-  it("returns the configured audience (desktop staging)", () => {
-    setConfig("openfront.dev");
-    expect(getAudience()).toBe("openfront.dev");
-    expect(getApiBase()).toBe("https://api.openfront.dev");
+  it("returns an operator-owned configured audience", () => {
+    setConfig("ironborders.example");
+    expect(getAudience()).toBe("ironborders.example");
+    expect(getApiBase()).toBe("https://api.ironborders.example");
   });
 
-  it("returns the configured audience (prod)", () => {
+  it("rejects the upstream production audience", () => {
     setConfig("openfront.io");
     expect(getAudience()).toBe("openfront.io");
-    expect(getApiBase()).toBe("https://api.openfront.io");
+    expect(() => getApiBase()).toThrow(
+      "Refusing to connect to an OpenFront production audience",
+    );
   });
 });

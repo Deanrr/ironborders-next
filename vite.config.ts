@@ -100,8 +100,7 @@ export default defineConfig(({ mode }) => {
     ? buildPublicAssetManifest(sourceDirs)
     : {};
   const cdnBase = env.CDN_BASE ?? "";
-  const legacyOpenFrontIntegrationsEnabled =
-    env.ENABLE_LEGACY_OPENFRONT_INTEGRATIONS === "true";
+  const legacyOpenFrontIntegrationsEnabled = false;
   const htmlAssetData = {
     assetManifest: JSON.stringify(assetManifest),
     cdnBase: JSON.stringify(cdnBase),

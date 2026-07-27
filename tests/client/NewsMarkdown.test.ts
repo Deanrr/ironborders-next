@@ -1,42 +1,38 @@
 import { normalizeNewsMarkdown } from "../../src/client/NewsMarkdown";
 
 describe("normalizeNewsMarkdown", () => {
-  it("converts openfront pull request URLs to short markdown links", () => {
+  it("converts upstream pull request URLs to non-link references", () => {
     const input =
       "Fix attack logic in https://github.com/openfrontio/OpenFrontIO/pull/1234";
 
     const result = normalizeNewsMarkdown(input);
 
-    expect(result).toContain(
-      "[#1234](https://github.com/openfrontio/OpenFrontIO/pull/1234)",
-    );
+    expect(result).toBe("Fix attack logic in #1234");
   });
 
-  it("converts openfront compare URLs to markdown links", () => {
+  it("converts upstream compare URLs to non-link references", () => {
     const input =
       "Full Changelog: https://github.com/openfrontio/OpenFrontIO/compare/v1.0.0...v1.1.0";
 
     const result = normalizeNewsMarkdown(input);
 
-    expect(result).toContain(
-      "[v1.0.0...v1.1.0](https://github.com/openfrontio/OpenFrontIO/compare/v1.0.0...v1.1.0)",
-    );
+    expect(result).toBe("Full Changelog: v1.0.0...v1.1.0");
   });
 
-  it("converts github @mentions to profile links", () => {
+  it("keeps contributor mentions as plain text", () => {
     const input = "- Feature by @evanpelle in release notes";
 
     const result = normalizeNewsMarkdown(input);
 
-    expect(result).toContain("[@evanpelle](https://github.com/evanpelle)");
+    expect(result).toBe(input);
   });
 
-  it("does not convert existing markdown-linked mentions", () => {
+  it("removes destinations from existing external markdown links", () => {
     const input = "Credit [@evanpelle](https://github.com/evanpelle)";
 
     const result = normalizeNewsMarkdown(input);
 
-    expect(result).toBe(input);
+    expect(result).toBe("Credit @evanpelle");
   });
 
   it("does not convert email addresses", () => {

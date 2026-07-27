@@ -569,7 +569,7 @@ export async function createCheckoutSession(
       return false;
     }
     const json = await response.json();
-    return json.url;
+    return ownerControlledNavigationUrl(json.url);
   } catch (e) {
     console.error("createCheckoutSession: request failed", e);
     return false;
@@ -603,7 +603,7 @@ export async function createCustomCurrencyCheckout(
       return false;
     }
     const json = await response.json();
-    return json.url;
+    return ownerControlledNavigationUrl(json.url);
   } catch (e) {
     console.error("createCustomCurrencyCheckout: request failed", e);
     return false;
@@ -700,7 +700,7 @@ export async function openSubscriptionPortal(): Promise<string | false> {
       return false;
     }
     const json = await response.json();
-    return json.url;
+    return ownerControlledNavigationUrl(json.url);
   } catch (e) {
     console.error("openSubscriptionPortal: request failed", e);
     return false;
@@ -793,38 +793,38 @@ export function getApiBase() {
   const domainname = getAudience();
 
   if (domainname === "localhost") {
-    const legacyIntegrationsEnabled =
-      typeof ClientEnv.legacyOpenFrontIntegrationsEnabled === "function"
-        ? ClientEnv.legacyOpenFrontIntegrationsEnabled()
-        : true;
-    if (!legacyIntegrationsEnabled) {
-      const apiHost = localStorage.getItem("apiHost");
-      if (apiHost && !isOpenFrontApiHost(apiHost)) {
-        return apiHost;
-      }
-      return "http://localhost:8787";
-    }
     const apiDomain = process.env.API_DOMAIN;
     if (apiDomain) {
       return `https://${apiDomain}`;
     }
-    return localStorage.getItem("apiHost") ?? "http://localhost:8787";
+    return "http://localhost:8787";
   }
 
+  assertOwnerControlledAudience(domainname);
   return `https://api.${domainname}`;
 }
 
-function isOpenFrontApiHost(value: string): boolean {
+function ownerControlledNavigationUrl(value: unknown): string | false {
+  if (typeof value !== "string") return false;
   try {
-    const hostname = new URL(value).hostname.toLowerCase();
-    return (
-      hostname === "openfront.io" ||
-      hostname.endsWith(".openfront.io") ||
-      hostname === "openfront.dev" ||
-      hostname.endsWith(".openfront.dev")
-    );
+    const url = new URL(value, window.location.origin);
+    return url.origin === window.location.origin ? url.toString() : false;
   } catch {
-    return true;
+    return false;
+  }
+}
+
+export function assertOwnerControlledAudience(audience: string): void {
+  const hostname = audience.toLowerCase();
+  if (
+    hostname === "openfront.io" ||
+    hostname.endsWith(".openfront.io") ||
+    hostname === "openfront.dev" ||
+    hostname.endsWith(".openfront.dev")
+  ) {
+    throw new Error(
+      "Refusing to connect to an OpenFront production audience. Configure DOMAIN for an operator-owned host.",
+    );
   }
 }
 

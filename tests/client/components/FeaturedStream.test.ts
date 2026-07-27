@@ -77,7 +77,7 @@ describe("FeaturedStream", () => {
         gameEnv: "prod",
         numWorkers: 1,
         turnstileSiteKey: "x",
-        jwtAudience: "openfront.io",
+        jwtAudience: "ironborders.example",
         instanceId: "desktop",
         gitCommit: "test",
       };

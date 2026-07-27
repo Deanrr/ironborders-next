@@ -32,7 +32,7 @@ describe("ClientEnv", () => {
       gameEnv: "staging",
       numWorkers: 4,
       turnstileSiteKey: "test-key",
-      jwtAudience: "openfront.dev",
+      jwtAudience: "staging.ironborders.example",
       instanceId: "TEST_ID",
       gitCommit: "abc123",
     };
@@ -41,7 +41,7 @@ describe("ClientEnv", () => {
     expect(ClientEnv.env()).toBe(GameEnv.Preprod);
     expect(ClientEnv.numWorkers()).toBe(4);
     expect(ClientEnv.turnstileSiteKey()).toBe("test-key");
-    expect(ClientEnv.jwtAudience()).toBe("openfront.dev");
+    expect(ClientEnv.jwtAudience()).toBe("staging.ironborders.example");
     expect(ClientEnv.instanceId()).toBe("TEST_ID");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -78,10 +78,10 @@ describe("ClientEnv", () => {
       gameEnv: "prod",
       numWorkers: 1,
       turnstileSiteKey: "k",
-      jwtAudience: "openfront.io",
+      jwtAudience: "ironborders.example",
       instanceId: "x",
       gitCommit: "abc123",
     };
-    expect(ClientEnv.jwtIssuer()).toBe("https://api.openfront.io");
+    expect(ClientEnv.jwtIssuer()).toBe("https://api.ironborders.example");
   });
 });

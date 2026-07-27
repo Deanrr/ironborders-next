@@ -97,63 +97,17 @@
       );
     </script>
 
-    <script>
-      if (window.BOOTSTRAP_CONFIG.legacyOpenFrontIntegrationsEnabled) {
-        const loadLegacyScript = (src, attributes = {}) => {
-          const script = document.createElement("script");
-          script.src = src;
-          Object.entries(attributes).forEach(([name, value]) => {
-            script.setAttribute(name, value);
-          });
-          document.head.appendChild(script);
-        };
-
-        loadLegacyScript("https://sdk.crazygames.com/crazygames-sdk-v3.js", {
-          async: "",
-        });
-        window.ramp = window.ramp || {};
-        window.ramp.que = window.ramp.que || [];
-        window.ramp.passiveMode = true;
-
-        window.googletag = window.googletag || { cmd: [] };
-        window.googletag.cmd.push(function () {
-          window.googletag.pubads().set("page_url", "https://openfront.io/");
-        });
-
-        window.dataLayer = window.dataLayer || [];
-        window.gtag = function () {
-          window.dataLayer.push(arguments);
-        };
-        window.gtag("js", new Date());
-        window.gtag("config", "AW-16702609763");
-        window.gtag("config", "G-WQGQQ8RDN4");
-        loadLegacyScript(
-          "https://www.googletagmanager.com/gtag/js?id=AW-16702609763",
-          { async: "" },
-        );
-        loadLegacyScript(
-          "https://www.googletagmanager.com/gtag/js?id=G-WQGQQ8RDN4",
-          { async: "" },
-        );
-      } else {
-        window.ramp = {
-          que: [],
-          passiveMode: true,
-          destroyUnits() {},
-          displayUnits() {},
-          spaAddAds() {
-            return Promise.resolve();
-          },
-        };
-      }
+    <script data-owner-controlled-services="disabled">
+      window.ramp = {
+        que: [],
+        passiveMode: true,
+        destroyUnits() {},
+        displayUnits() {},
+        spaAddAds() {
+          return Promise.resolve();
+        },
+      };
     </script>
-
-    <!-- Reusable bot protection; localhost uses Cloudflare's published test key. -->
-    <script
-      src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-      async
-      defer
-    ></script>
   </head>
 
   <body
@@ -205,10 +159,6 @@
         id="turnstile-container"
         class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-99999"
       ></div>
-
-      <homepage-promos></homepage-promos>
-      <marketing-consent-toast></marketing-consent-toast>
-      <steam-link-signpost></steam-link-signpost>
 
       <!-- Main container with responsive padding -->
       <main-layout class="contents">
@@ -382,12 +332,6 @@
     <player-info-overlay></player-info-overlay>
     <heads-up-message></heads-up-message>
 
-    <!-- Featured stream: direct <body> child (NOT inside the in-[.in-game]:hidden
-         home container) so the Twitch iframe is never display:none'd during a game,
-         which would unmount the player and break ToS-compliant playback. The
-         component is position:fixed and self-manages visibility (pauses in-game). -->
-    <featured-stream></featured-stream>
-
     <!-- Scripts -->
     <script>
       // Remove preload class after everything is loaded
@@ -466,21 +410,5 @@
     </script>
 
     <script type="module" src="/src/client/Main.ts"></script>
-    <script>
-      if (window.BOOTSTRAP_CONFIG.legacyOpenFrontIntegrationsEnabled) {
-        const insights = document.createElement("script");
-        insights.defer = true;
-        insights.src = "https://static.cloudflareinsights.com/beacon.min.js";
-        insights.dataset.cfBeacon =
-          '{"token":"03d93e6fefb349c28ee69b408fa25a13"}';
-        document.body.appendChild(insights);
-
-        const advertising = document.createElement("script");
-        advertising.async = true;
-        advertising.src = "//cdn.intergient.com/1025558/75940/ramp.js";
-        advertising.setAttribute("data-cfasync", "false");
-        document.body.appendChild(advertising);
-      }
-    </script>
   </body>
 </html>

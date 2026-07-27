@@ -78,6 +78,7 @@ export class ClientEnv {
   }
   static jwtIssuer(): string {
     const audience = ClientEnv.jwtAudience();
+    assertOwnerControlledAudience(audience);
     return audience === "localhost"
       ? "http://localhost:8787"
       : `https://api.${audience}`;
@@ -128,6 +129,20 @@ export class ClientEnv {
   }
 }
 
+function assertOwnerControlledAudience(audience: string): void {
+  const hostname = audience.toLowerCase();
+  if (
+    hostname === "openfront.io" ||
+    hostname.endsWith(".openfront.io") ||
+    hostname === "openfront.dev" ||
+    hostname.endsWith(".openfront.dev")
+  ) {
+    throw new Error(
+      "Refusing to connect to an OpenFront production audience. Configure DOMAIN for an operator-owned host.",
+    );
+  }
+}
+
 /**
  * Resolve the game-server WebSocket origin.
  *
@@ -150,6 +165,7 @@ export function deriveServerWsBase(
   locationHost: string,
 ): string {
   if (serverHost) {
+    assertOwnerControlledAudience(serverHost);
     return `wss://${serverHost}`;
   }
   const wsProtocol = locationProtocol === "https:" ? "wss:" : "ws:";

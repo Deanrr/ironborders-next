@@ -22,11 +22,8 @@
     "games_username": "Username",
     "get_magic_link": "Get Magic Link",
     "google_alt": "Google",
-    "link_discord": "Link Discord Account",
-    "link_google": "Link Google Account",
     "link_google_already_linked": "That Google account is already linked to another player.",
     "link_google_error": "Couldn't link your Google account. Please make sure you're signed in and try again.",
-    "link_google_failed": "Couldn't start Google linking. Please try again.",
     "link_google_success": "Google account linked.",
     "linked_account": "Logged in as {account_name}",
     "linked_to_google": "Linked to Google",
@@ -38,7 +35,6 @@
     "marketing_title": "Email updates",
     "no_games": "No games played yet.",
     "no_stats": "No stats available yet. Play some games to start tracking.",
-    "or": "OR",
     "reactivate_subscription": "Reactivate",
     "recovery_email_sent": "Recovery email sent to {email}",
     "reward_daily": "Daily subscription reward",
@@ -220,8 +216,6 @@
     "discord_online_members": "{online, number} online · {members, number} members",
     "discord_rate_limited": "Please wait a minute before verifying another Discord link.",
     "discord_section_title": "Discord",
-    "discord_url_hint": "Use an invite set to never expire.",
-    "discord_url_label": "Discord Invite URL",
     "error_already_member": "Already a member",
     "error_banned": "You are banned from this clan.",
     "error_banned_reason": "You are banned from this clan. Reason: {reason}",
@@ -948,8 +942,6 @@
     "help": "Help",
     "join": "Join Lobby",
     "leaderboard": "Leaderboard",
-    "login_discord": "Login with Discord",
-    "login_google": "Login with Google",
     "menu": "Menu",
     "news": "News",
     "play": "Play",
@@ -958,8 +950,7 @@
     "solo": "Solo",
     "store": "Store",
     "title": "Iron Borders (ALPHA)",
-    "troubleshooting": "Troubleshooting",
-    "user_avatar_alt": "{username}'s avatar"
+    "troubleshooting": "Troubleshooting"
   },
   "map": {
     "achiran": "Achiran",
@@ -1690,10 +1681,7 @@
   },
   "win_modal": {
     "died": "You died",
-    "discord_description": "Connect with players, discover new features, and win prizes!",
     "exit": "Exit Game",
-    "join_discord": "Join Our Discord Community!",
-    "join_server": "Join Server",
     "keep": "Keep Playing",
     "match_cancelled": "Match cancelled — not all players spawned",
     "nation_won": "Nation {nation} has won!",
@@ -1704,9 +1692,7 @@
     "spectate": "Spectate",
     "support_openfront": "Support Iron Borders!",
     "territory_pattern": "Purchase a territory skin to go ad-free!",
-    "wishlist": "Wishlist on Steam!",
     "you_won": "You Won!",
-    "your_team": "Your team won!",
-    "youtube_tutorial": "Need some help?"
+    "your_team": "Your team won!"
   }
 }

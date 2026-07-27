@@ -30,9 +30,7 @@ export class GameStartingModal extends LitElement {
           Iron Borders · Derived from OpenFrontIO
         </div>
         <a
-          href="https://github.com/openfrontio/OpenFrontIO/blob/main/CREDITS.md"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/notices.html"
           class="block mb-4 text-lg font-medium tracking-wider uppercase text-malibu-blue no-underline transition-colors duration-200 hover:text-aquarius"
           >${translateText("game_starting_modal.credits")}</a
         >

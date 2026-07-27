@@ -14,8 +14,6 @@ import { GameEnv } from "../core/configuration/Config";
 import { GameType } from "../core/game/Game";
 import { UserSettings } from "../core/game/UserSettings";
 import "./AccountModal";
-import { adGatekeeper } from "./AdGatekeeper";
-import { loadAdmiral, onAdmiralMeasured } from "./Admiral";
 import { getUserMe, invalidateUserMe } from "./Api";
 import { reauthAfterCrazyGamesChange, userAuth } from "./Auth";
 import "./ClanModal";
@@ -26,8 +24,6 @@ import "./CosmeticsModal";
 import { CosmeticsModal } from "./CosmeticsModal";
 import { updateCrazyGamesNavButton } from "./CrazyGamesAccountButton";
 import { crazyGamesSDK } from "./CrazyGamesSDK";
-import { isDesktopShell } from "./DesktopShell";
-import "./FeaturedStream";
 import "./FlagInput";
 import { FlagInput } from "./FlagInput";
 import "./FlagInputModal";
@@ -65,12 +61,7 @@ import {
 import { UserSettingModal } from "./UserSettingModal";
 import "./UsernameInput";
 import { genAnonUsername, UsernameInput } from "./UsernameInput";
-import {
-  getDiscordAvatarUrl,
-  incrementGamesPlayed,
-  isInIframe,
-  translateText,
-} from "./Utils";
+import { incrementGamesPlayed, isInIframe, translateText } from "./Utils";
 import "./components/MarketingConsentToast";
 import { installSafariPinchZoomBlocker } from "./utilities/DisableSafariPinchZoom";
 
@@ -93,9 +84,9 @@ function updateAccountNavButton(userMeResponse: UserMeResponse | false) {
   const button = document.getElementById("nav-account-button");
   if (!button) return;
 
-  const avatarEl = document.getElementById("nav-account-avatar") as
-    | (HTMLImageElement & { _navToken?: symbol })
-    | null;
+  const avatarEl = document.getElementById(
+    "nav-account-avatar",
+  ) as HTMLImageElement | null;
   const personIconEl = document.getElementById(
     "nav-account-person-icon",
   ) as SVGElement | null;
@@ -110,35 +101,6 @@ function updateAccountNavButton(userMeResponse: UserMeResponse | false) {
   document
     .getElementById("nav-account-loading-spinner")
     ?.classList.add("hidden");
-
-  // Unique token for this update call
-  const navToken = Symbol();
-  if (avatarEl) avatarEl._navToken = navToken;
-
-  const showAvatar = (src: string, alt?: string) => {
-    if (avatarEl) {
-      avatarEl.alt = alt ?? translateText("main.discord_avatar_alt");
-      // If the avatar fails to load (bad URL / CDN issue / offline), fall back
-      // to the default sign-in UI instead of leaving a broken image.
-      avatarEl.onerror = () => {
-        if (avatarEl._navToken !== navToken) return;
-        avatarEl.onerror = null;
-        avatarEl.src = "https://cdn.discordapp.com/embed/avatars/0.png";
-      };
-      avatarEl.onload = () => {
-        // Only handle if this is the latest update
-        if (avatarEl._navToken !== navToken) return;
-        // Clear error handler after a successful load.
-        avatarEl.onerror = null;
-      };
-      avatarEl.src = src;
-      avatarEl.classList.remove("hidden");
-    }
-    personIconEl?.classList.add("hidden");
-    emailBadgeEl?.classList.add("hidden");
-    signInTextEl?.classList.add("hidden");
-    button?.classList.remove("border", "border-white/20");
-  };
 
   const showSignIn = () => {
     avatarEl?.classList.add("hidden");
@@ -159,16 +121,7 @@ function updateAccountNavButton(userMeResponse: UserMeResponse | false) {
 
   const discord =
     userMeResponse !== false ? userMeResponse.user.discord : undefined;
-  if (discord && avatarEl) {
-    const avatarAlt = translateText("main.user_avatar_alt", {
-      username: discord.username,
-    });
-    const url = getDiscordAvatarUrl(discord);
-    if (url) {
-      showAvatar(url, avatarAlt);
-      return;
-    }
-  }
+  void discord;
 
   const email =
     userMeResponse !== false ? userMeResponse.user.email : undefined;
@@ -341,7 +294,10 @@ class Client {
     // skip it — otherwise getTurnstileToken() throws "Failed to load Turnstile
     // script" after its load wait.
     this.turnstileTokenPromise =
-      ClientEnv.instanceId() === "desktop" ? null : getTurnstileToken();
+      ClientEnv.instanceId() === "desktop" ||
+      ClientEnv.turnstileSiteKey() === "disabled"
+        ? null
+        : getTurnstileToken();
 
     // Wait for components to render before setting version
     await customElements.whenDefined("mobile-nav-bar");
@@ -509,29 +465,11 @@ class Client {
       } else {
         updateAccountNavButton(userMeResponse);
       }
-      const isAdFree =
-        userMeResponse !== false && userMeResponse.player?.adfree === true;
-      window.adsEnabled =
-        ClientEnv.legacyOpenFrontIntegrationsEnabled() &&
-        !isAdFree &&
-        !crazyGamesSDK.isOnCrazyGames() &&
-        !isDesktopShell();
+      window.adsEnabled = false;
       // Ad-eligible users only: paid/adfree users must never load Admiral (its
       // adblock popup fires autonomously once the payload runs). Start watching
       // adblock state; once a blocker is ever detected the in-game ad is
       // suppressed forever (persisted) — those users are highly ad-sensitive.
-      if (window.adsEnabled) {
-        loadAdmiral();
-        // Admiral's read is more reliable than our DOM bait, so use it as a
-        // fast initial signal. A blocker that whitelists this site still shows
-        // ads, so "blocked" means adblocking AND not whitelisted.
-        onAdmiralMeasured((res) => {
-          adGatekeeper.seed(
-            res.adblocking === true && res.whitelisted !== true,
-          );
-        });
-        adGatekeeper.start();
-      }
       document.dispatchEvent(
         new CustomEvent("userMeResponse", {
           detail: userMeResponse,

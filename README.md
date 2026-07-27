@@ -102,19 +102,43 @@ npm run build-prod
 If `git merge --ff-only upstream/main` fails, stop and inspect the divergence.
 Do not force-push or discard local commits to make synchronization succeed.
 
-## Production integrations
+## Self-owned service boundary
 
-OpenFront-specific advertising, analytics, and CrazyGames browser scripts are
-disabled by default. The legacy integration markup remains gated for upstream
-comparison and runs only when
-`ENABLE_LEGACY_OPENFRONT_INTEGRATIONS=true` is explicitly configured.
-Reusable Cloudflare Turnstile bot protection remains enabled; localhost uses
-Cloudflare's published test site key.
+The browser loads no third-party advertising, analytics, platform SDK,
+streaming, social promotion, tutorial, or challenge scripts. Public notices,
+source information, legal placeholders, and the tutorial are served from the
+same Iron Borders origin.
 
-OpenTelemetry, private match telemetry, CDN delivery, and deployment helpers
-remain available as reusable infrastructure, but are inactive when their
-environment variables are unset. Do not point an Iron Borders deployment at
-OpenFront-operated services.
+Multiplayer remains enabled through the owner-operated game server. Lobby
+discovery, game creation, and WebSockets use same-origin routes. In a hosted
+deployment, `DOMAIN` and the API service at `api.<DOMAIN>` must both be under
+the operator's control.
+
+Join verification is disabled by default with
+`JOIN_VERIFICATION_ENABLED=false` and `TURNSTILE_SITE_KEY=disabled`. The game
+server still applies its local username and clan-tag censor, but an operator
+must add an owner-controlled abuse-prevention service before enabling
+verification in production.
+
+OpenTelemetry, private match telemetry, CDN delivery, account, clan, store, and
+deployment modules remain available as optional infrastructure. Configure them
+only with endpoints, credentials, storage, and policies controlled by the Iron
+Borders operator. The default account UI uses the operator API's email magic
+link flow; third-party OAuth buttons are not exposed. Clan gameplay remains
+available without resolving or linking to Discord. Store checkout and
+subscription navigation are accepted only when the operator API returns a URL
+on the current Iron Borders origin, so an owner-controlled reverse proxy is
+required for hosted payment flows.
+
+The client rejects `openfront.io` and `openfront.dev` as configured API or
+desktop game-server audiences. Local API host overrides are not read from
+browser storage. Production `DOMAIN`, optional `API_DOMAIN`, `CDN_BASE`,
+OpenTelemetry, and telemetry endpoints must be reviewed as part of deployment;
+the application cannot prove domain ownership on the operator's behalf.
+
+Before public hosting, replace the local privacy and terms placeholders and
+make the exact Corresponding Source archive for the deployed commit available
+from the local source page.
 
 ## Licensing and source availability
 

@@ -71,3 +71,26 @@ its visible identity.
 
 No combat, economy, AI, map ownership, diplomacy, multiplayer protocol,
 deterministic simulation, or persistence behavior was intentionally changed.
+
+### 2026-07-27 — self-owned service boundary
+
+- Removed public links to third-party community, store, source-hosting, video,
+  streaming, advertising, analytics, and bot-challenge services.
+- Added same-origin notices, source, tutorial, privacy, and terms pages.
+- Kept multiplayer lobby discovery, game creation, and WebSockets on
+  owner-operated same-origin routes.
+- Disabled remote join verification by default while preserving the local name
+  censor and owner-configurable verification boundary.
+- Retained API, account, clan, store, CDN, OpenTelemetry, and match telemetry
+  modules for use only with operator-controlled services.
+- Removed third-party OAuth choices from the default account UI while retaining
+  the owner-operated email magic-link path.
+- Disabled Discord invite resolution, external clan destinations, remote
+  avatars, and third-party checkout navigation; clan and store modules continue
+  to use the operator API and same-origin destinations.
+- Rejected OpenFront API and desktop game-server audiences and removed
+  browser-stored API host overrides.
+- Converted upstream changelog references and contributor mentions to plain
+  text so the product UI does not create external source-hosting links.
+- Replaced the inherited remote news and promotional content with local Iron
+  Borders information.
