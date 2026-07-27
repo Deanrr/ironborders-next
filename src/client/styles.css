@@ -9,33 +9,34 @@
   --font-display: "OpenFront", Inter, Arial, sans-serif;
 
   /* Openfront.io brand palette — see Openfront_Brand_Guidelines.pdf §4 */
-  --color-malibu-blue: #0084d1;
-  --color-aquarius: #3fa9f5;
-  --color-dawn-blue: #cccccc;
-  --color-bright-white: #ffffff;
-  --color-bright-blue: #1e90ff;
+  --color-malibu-blue: #c36b3c;
+  --color-aquarius: #d89065;
+  --color-dawn-blue: #aeb9c2;
+  --color-bright-white: #eef2f5;
+  --color-bright-blue: #d77a48;
 
   /* Openfront Masters sub-brand */
   --color-cyber-yellow: #ffd700;
   --color-limestone: #999999;
 
   /* Background & decorative — not for standalone UI use */
-  --color-deep-navy: #0a1628;
-  --color-hex-cyan: #00c8ff;
-  --color-frame-orange: #f97316;
+  --color-deep-navy: #111820;
+  --color-hex-cyan: #81909c;
+  --color-frame-orange: #c36b3c;
 
   /* App-specific surface colors */
-  --color-surface: #0a1628;
+  --color-surface: #111820;
 
-  --shadow-malibu-blue: 0 0 15px rgba(0, 132, 209, 0.2);
-  --shadow-malibu-blue-soft: 0 0 12px rgba(0, 132, 209, 0.2);
-  --shadow-malibu-blue-strong: 0 0 15px rgba(0, 132, 209, 0.3);
-  --shadow-malibu-blue-pill: 0 0 6px rgba(0, 132, 209, 0.35);
-  --shadow-malibu-blue-ring-sm: 0 0 0 4px rgba(0, 132, 209, 0.2);
-  --shadow-malibu-blue-ring-lg: 0 0 0 6px rgba(0, 132, 209, 0.3);
-  --shadow-lobby-card-hover: 0 0 0 2px #0084d1, 0 0 20px rgba(0, 132, 209, 0.5);
+  --shadow-malibu-blue: 0 0 15px rgba(195, 107, 60, 0.2);
+  --shadow-malibu-blue-soft: 0 0 12px rgba(195, 107, 60, 0.2);
+  --shadow-malibu-blue-strong: 0 0 15px rgba(195, 107, 60, 0.3);
+  --shadow-malibu-blue-pill: 0 0 6px rgba(195, 107, 60, 0.35);
+  --shadow-malibu-blue-ring-sm: 0 0 0 4px rgba(195, 107, 60, 0.2);
+  --shadow-malibu-blue-ring-lg: 0 0 0 6px rgba(195, 107, 60, 0.3);
+  --shadow-lobby-card-hover:
+    0 0 0 2px #c36b3c, 0 0 20px rgba(195, 107, 60, 0.5);
   --shadow-action-card-hover:
-    0 0 0 1px #0084d1, 0 0 12px rgba(0, 132, 209, 0.35);
+    0 0 0 1px #c36b3c, 0 0 12px rgba(195, 107, 60, 0.35);
 }
 
 @layer base {

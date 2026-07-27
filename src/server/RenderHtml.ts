@@ -29,24 +29,34 @@ export async function renderHtmlContent(htmlPath: string): Promise<string> {
     turnstileSiteKey: JSON.stringify(ServerEnv.turnstileSiteKey()),
     jwtAudience: JSON.stringify(ServerEnv.jwtAudience()),
     instanceId: JSON.stringify(ServerEnv.instanceId()),
+    legacyOpenFrontIntegrationsEnabled:
+      process.env.ENABLE_LEGACY_OPENFRONT_INTEGRATIONS === "true",
     manifestHref: buildAssetUrl("manifest.json", assetManifest, cdnBase),
-    faviconHref: buildAssetUrl("images/Favicon.svg", assetManifest, cdnBase),
+    faviconHref: buildAssetUrl(
+      "images/IronBordersFavicon.svg",
+      assetManifest,
+      cdnBase,
+    ),
     gameplayScreenshotUrl: buildAssetUrl(
-      "images/GameplayScreenshot.png",
+      "images/IronBordersBackground.svg",
       assetManifest,
       cdnBase,
     ),
     backgroundImageUrl: buildAssetUrl(
-      "images/background.webp",
+      "images/IronBordersBackground.svg",
       assetManifest,
       cdnBase,
     ),
     desktopLogoImageUrl: buildAssetUrl(
-      "images/OpenFront.png",
+      "images/IronBordersLogo.svg",
       assetManifest,
       cdnBase,
     ),
-    mobileLogoImageUrl: buildAssetUrl("images/OF.png", assetManifest, cdnBase),
+    mobileLogoImageUrl: buildAssetUrl(
+      "images/IronBordersMark.svg",
+      assetManifest,
+      cdnBase,
+    ),
   });
 }
 

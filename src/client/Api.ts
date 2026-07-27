@@ -793,6 +793,17 @@ export function getApiBase() {
   const domainname = getAudience();
 
   if (domainname === "localhost") {
+    const legacyIntegrationsEnabled =
+      typeof ClientEnv.legacyOpenFrontIntegrationsEnabled === "function"
+        ? ClientEnv.legacyOpenFrontIntegrationsEnabled()
+        : true;
+    if (!legacyIntegrationsEnabled) {
+      const apiHost = localStorage.getItem("apiHost");
+      if (apiHost && !isOpenFrontApiHost(apiHost)) {
+        return apiHost;
+      }
+      return "http://localhost:8787";
+    }
     const apiDomain = process.env.API_DOMAIN;
     if (apiDomain) {
       return `https://${apiDomain}`;
@@ -801,6 +812,20 @@ export function getApiBase() {
   }
 
   return `https://api.${domainname}`;
+}
+
+function isOpenFrontApiHost(value: string): boolean {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    return (
+      hostname === "openfront.io" ||
+      hostname.endsWith(".openfront.io") ||
+      hostname === "openfront.dev" ||
+      hostname.endsWith(".openfront.dev")
+    );
+  } catch {
+    return true;
+  }
 }
 
 export function getAudience() {

@@ -100,6 +100,8 @@ export default defineConfig(({ mode }) => {
     ? buildPublicAssetManifest(sourceDirs)
     : {};
   const cdnBase = env.CDN_BASE ?? "";
+  const legacyOpenFrontIntegrationsEnabled =
+    env.ENABLE_LEGACY_OPENFRONT_INTEGRATIONS === "true";
   const htmlAssetData = {
     assetManifest: JSON.stringify(assetManifest),
     cdnBase: JSON.stringify(cdnBase),
@@ -111,23 +113,32 @@ export default defineConfig(({ mode }) => {
     jwtAudience: JSON.stringify(env.DOMAIN ?? "localhost"),
     instanceId: JSON.stringify(env.INSTANCE_ID ?? "DEV_ID"),
     manifestHref: buildAssetUrl("manifest.json", assetManifest, cdnBase),
-    faviconHref: buildAssetUrl("images/Favicon.svg", assetManifest, cdnBase),
+    legacyOpenFrontIntegrationsEnabled,
+    faviconHref: buildAssetUrl(
+      "images/IronBordersFavicon.svg",
+      assetManifest,
+      cdnBase,
+    ),
     gameplayScreenshotUrl: buildAssetUrl(
-      "images/GameplayScreenshot.png",
+      "images/IronBordersBackground.svg",
       assetManifest,
       cdnBase,
     ),
     backgroundImageUrl: buildAssetUrl(
-      "images/background.webp",
+      "images/IronBordersBackground.svg",
       assetManifest,
       cdnBase,
     ),
     desktopLogoImageUrl: buildAssetUrl(
-      "images/OpenFront.png",
+      "images/IronBordersLogo.svg",
       assetManifest,
       cdnBase,
     ),
-    mobileLogoImageUrl: buildAssetUrl("images/OF.png", assetManifest, cdnBase),
+    mobileLogoImageUrl: buildAssetUrl(
+      "images/IronBordersMark.svg",
+      assetManifest,
+      cdnBase,
+    ),
   };
 
   // Vite's HTML transform replaces the source <script src="/src/client/Main.ts">

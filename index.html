@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <title data-i18n="main.title">OpenFront (ALPHA)</title>
+    <title data-i18n="main.title">Iron Borders (ALPHA)</title>
     <link rel="manifest" href="<%- manifestHref %>" />
     <link rel="icon" type="image/svg+xml" href="<%- faviconHref %>" />
 
@@ -56,18 +56,16 @@
     </style>
 
     <!-- SEO -->
-    <link rel="canonical" href="https://openfront.io/" />
     <meta
       name="description"
-      content="Conquer the world in this multiplayer battle royale! Expand your nation, eliminate opponents, and dominate the map in this fast-paced IO game."
+      content="Iron Borders is an open-source territorial strategy game derived from OpenFrontIO."
     />
 
     <!-- Open Graph -->
-    <meta property="og:url" content="https://openfront.io/" />
-    <meta property="og:title" content="OpenFront - Battle Royale" />
+    <meta property="og:title" content="Iron Borders" />
     <meta
       property="og:description"
-      content="Conquer the world in this multiplayer battle royale! Expand your nation, eliminate opponents, and dominate the map in this fast-paced IO game."
+      content="An open-source territorial strategy game derived from OpenFrontIO."
     />
     <meta property="og:image" content="<%- gameplayScreenshotUrl %>" />
     <meta property="og:type" content="game" />
@@ -83,76 +81,79 @@
         turnstileSiteKey: <%- turnstileSiteKey %>,
         jwtAudience: <%- jwtAudience %>,
         instanceId: <%- instanceId %>,<%- typeof serverHost !== "undefined" && serverHost ? "\n        serverHost: " + serverHost + "," : "" %>
+        legacyOpenFrontIntegrationsEnabled: <%- legacyOpenFrontIntegrationsEnabled %>,
       };
       document.documentElement.style.setProperty(
         "--background-image-url",
         `url("<%- backgroundImageUrl %>")`,
       );
-      // document.documentElement.style.setProperty(
-      //   "--desktop-logo-image-url",
-      //   `url("<%- desktopLogoImageUrl %>")`,
-      // );
+      document.documentElement.style.setProperty(
+        "--desktop-logo-image-url",
+        `url("<%- desktopLogoImageUrl %>")`,
+      );
       document.documentElement.style.setProperty(
         "--mobile-logo-image-url",
         `url("<%- mobileLogoImageUrl %>")`,
       );
     </script>
 
-    <!-- CrazyGames SDK -->
-    <script
-      src="https://sdk.crazygames.com/crazygames-sdk-v3.js"
-      async
-    ></script>
+    <script>
+      if (window.BOOTSTRAP_CONFIG.legacyOpenFrontIntegrationsEnabled) {
+        const loadLegacyScript = (src, attributes = {}) => {
+          const script = document.createElement("script");
+          script.src = src;
+          Object.entries(attributes).forEach(([name, value]) => {
+            script.setAttribute(name, value);
+          });
+          document.head.appendChild(script);
+        };
 
-    <!-- Cloudflare Turnstile -->
+        loadLegacyScript("https://sdk.crazygames.com/crazygames-sdk-v3.js", {
+          async: "",
+        });
+        window.ramp = window.ramp || {};
+        window.ramp.que = window.ramp.que || [];
+        window.ramp.passiveMode = true;
+
+        window.googletag = window.googletag || { cmd: [] };
+        window.googletag.cmd.push(function () {
+          window.googletag.pubads().set("page_url", "https://openfront.io/");
+        });
+
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () {
+          window.dataLayer.push(arguments);
+        };
+        window.gtag("js", new Date());
+        window.gtag("config", "AW-16702609763");
+        window.gtag("config", "G-WQGQQ8RDN4");
+        loadLegacyScript(
+          "https://www.googletagmanager.com/gtag/js?id=AW-16702609763",
+          { async: "" },
+        );
+        loadLegacyScript(
+          "https://www.googletagmanager.com/gtag/js?id=G-WQGQQ8RDN4",
+          { async: "" },
+        );
+      } else {
+        window.ramp = {
+          que: [],
+          passiveMode: true,
+          destroyUnits() {},
+          displayUnits() {},
+          spaAddAds() {
+            return Promise.resolve();
+          },
+        };
+      }
+    </script>
+
+    <!-- Reusable bot protection; localhost uses Cloudflare's published test key. -->
     <script
       src="https://challenges.cloudflare.com/turnstile/v0/api.js"
       async
       defer
     ></script>
-
-    <script data-cfasync="false">
-      window.ramp = window.ramp || {};
-      window.ramp.que = window.ramp.que || [];
-      window.ramp.passiveMode = true;
-    </script>
-
-    <script>
-      window.googletag = window.googletag || { cmd: [] };
-      googletag.cmd.push(function () {
-        googletag.pubads().set("page_url", "http://openfront.io ");
-      });
-    </script>
-
-    <!-- Analytics -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=AW-16702609763"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-
-      gtag("js", new Date());
-      gtag("config", "AW-16702609763");
-    </script>
-    <!-- Google tag (gtag.js) -->
-    <script
-      async
-      src="https://www.googletagmanager.com/gtag/js?id=G-WQGQQ8RDN4"
-    ></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-
-      gtag("config", "G-WQGQQ8RDN4");
-    </script>
   </head>
 
   <body
@@ -464,19 +465,22 @@
       });
     </script>
 
-    <!-- Analytics -->
-    <script
-      defer
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon='{"token": "03d93e6fefb349c28ee69b408fa25a13"}'
-    ></script>
     <script type="module" src="/src/client/Main.ts"></script>
-    <footer>
-      <script
-        data-cfasync="false"
-        async
-        src="//cdn.intergient.com/1025558/75940/ramp.js"
-      ></script>
-    </footer>
+    <script>
+      if (window.BOOTSTRAP_CONFIG.legacyOpenFrontIntegrationsEnabled) {
+        const insights = document.createElement("script");
+        insights.defer = true;
+        insights.src = "https://static.cloudflareinsights.com/beacon.min.js";
+        insights.dataset.cfBeacon =
+          '{"token":"03d93e6fefb349c28ee69b408fa25a13"}';
+        document.body.appendChild(insights);
+
+        const advertising = document.createElement("script");
+        advertising.async = true;
+        advertising.src = "//cdn.intergient.com/1025558/75940/ramp.js";
+        advertising.setAttribute("data-cfasync", "false");
+        document.body.appendChild(advertising);
+      }
+    </script>
   </body>
 </html>

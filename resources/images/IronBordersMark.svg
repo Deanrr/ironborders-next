@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 180" role="img" aria-labelledby="title">
+  <title id="title">Iron Borders mark</title>
+  <path d="M14 12h132v94c0 29-23 49-66 62-43-13-66-33-66-62z" fill="#111820" stroke="#c36b3c" stroke-width="9"/>
+  <path d="M46 45h20v76H46zm48 0h20v76H94z" fill="#d8e1e8"/>
+  <path d="M66 73h28v20H66z" fill="#c36b3c"/>
+</svg>

@@ -42,6 +42,8 @@ export class ClientEnv {
       jwtAudience: bc.jwtAudience,
       instanceId: bc.instanceId,
       gitCommit: bc.gitCommit,
+      legacyOpenFrontIntegrationsEnabled:
+        bc.legacyOpenFrontIntegrationsEnabled ?? false,
       // Optional: only the desktop app injects an explicit game-server host.
       // Absent on the web build (falls back to same-origin window.location).
       serverHost: bc.serverHost,
@@ -70,6 +72,9 @@ export class ClientEnv {
   }
   static gitCommit(): string {
     return ClientEnv.get().gitCommit;
+  }
+  static legacyOpenFrontIntegrationsEnabled(): boolean {
+    return ClientEnv.get().legacyOpenFrontIntegrationsEnabled;
   }
   static jwtIssuer(): string {
     const audience = ClientEnv.jwtAudience();
@@ -162,5 +167,6 @@ export interface ClientEnvValues {
   jwtAudience: string;
   instanceId: string;
   gitCommit: string;
+  legacyOpenFrontIntegrationsEnabled: boolean;
   serverHost?: string;
 }
