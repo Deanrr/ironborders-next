@@ -350,7 +350,7 @@ export class Transport {
     // WS origin comes from ClientEnv (same-origin on web, audience-derived on
     // the desktop app://openfront origin), not window.location.host.
     const workerPath = ClientEnv.workerPath(this.lobbyConfig.gameID);
-    this.socket = new WebSocket(`${ClientEnv.serverWsBase()}/${workerPath}`);
+    this.socket = new WebSocket(`${ClientEnv.gameServerWsBase()}/${workerPath}`);
     this.onconnect = onconnect;
     this.onmessage = onmessage;
     this.socket.onopen = () => {

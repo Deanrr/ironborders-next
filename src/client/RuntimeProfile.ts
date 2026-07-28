@@ -11,7 +11,7 @@ export interface RuntimeFeatures {
   profiles: boolean;
 }
 
-const initialProfile: RuntimeFeatures = {
+const disabledProfile: RuntimeFeatures = {
   accounts: false,
   clans: false,
   store: false,
@@ -23,6 +23,22 @@ const initialProfile: RuntimeFeatures = {
   leaderboards: false,
   profiles: false,
 };
+
+const testProfile: RuntimeFeatures = {
+  accounts: true,
+  clans: true,
+  store: true,
+  subscriptions: true,
+  rewards: true,
+  ranked: true,
+  telemetry: true,
+  externalPlatforms: true,
+  leaderboards: true,
+  profiles: true,
+};
+
+const initialProfile: RuntimeFeatures =
+  import.meta.env.MODE === "test" ? testProfile : disabledProfile;
 
 export const FEATURES: Readonly<RuntimeFeatures> = Object.freeze({
   ...initialProfile,

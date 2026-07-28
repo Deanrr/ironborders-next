@@ -28,7 +28,7 @@ declare global {
     BOOTSTRAP_CONFIG?: {
       gitCommit?: string;
       assetManifest?: AssetManifest;
-      cdnBase?: string;
+      cdnOrigin?: string;
       gameEnv?: string;
       numWorkers?: number;
       turnstileSiteKey?: string;
@@ -38,7 +38,6 @@ declare global {
       publicOrigin?: string;
       gameServerOrigin?: string;
       accountApiOrigin?: string;
-      cdnOrigin?: string;
       features?: Record<string, boolean>;
       // Desktop-only: explicit game-server host for the WebSocket origin.
       // Absent on the web build (client falls back to same-origin location).

@@ -69,7 +69,7 @@ export function buildAssetUrl(
 
 declare global {
   var __ASSET_MANIFEST__: AssetManifest | undefined;
-  var __CDN_BASE__: string | undefined;
+  var __CDN_ORIGIN__: string | undefined;
 }
 
 export function getAssetManifest(): AssetManifest {
@@ -82,18 +82,18 @@ export function getAssetManifest(): AssetManifest {
   return globalThis.__ASSET_MANIFEST__ ?? {};
 }
 
-// Web workers have no `window`, so they read `__CDN_BASE__` off globalThis,
+// Web workers have no `window`, so they read `__CDN_ORIGIN__` off globalThis,
 // which Worker.worker.ts sets from the init message before any asset fetches.
 // Without this fallback, asset fetches inside workers (e.g. map binaries)
 // would silently bypass the CDN.
 export function getCdnBase(): string {
   if (
     typeof window !== "undefined" &&
-    window.BOOTSTRAP_CONFIG?.cdnBase !== undefined
+    window.BOOTSTRAP_CONFIG?.cdnOrigin !== undefined
   ) {
-    return window.BOOTSTRAP_CONFIG.cdnBase;
+    return window.BOOTSTRAP_CONFIG.cdnOrigin;
   }
-  return globalThis.__CDN_BASE__ ?? "";
+  return globalThis.__CDN_ORIGIN__ ?? "";
 }
 
 export function assetUrl(path: string): string {
@@ -102,7 +102,7 @@ export function assetUrl(path: string): string {
 
 // Rewrites Vite's emitted /assets/... references in the built index.html to
 // use the cdnBaseRaw EJS placeholder, so RenderHtml.ts can prefix them with
-// CDN_BASE at request time. Scoped to src=/href= attribute values so inline
+// CDN_ORIGIN at request time. Scoped to src=/href= attribute values so inline
 // scripts containing the literal "/assets/..." can't be mangled. Does NOT
 // match /_assets/ (underscore) — source-asset manifest URLs are prefixed via
 // buildAssetUrl, not this rewrite. Falls back to "" when cdnBaseRaw is missing

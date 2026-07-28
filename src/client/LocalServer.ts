@@ -305,7 +305,7 @@ export class LocalServer {
 
     compress(jsonString)
       .then((compressedData) => {
-        return fetch(`/${workerPath}/api/archive_singleplayer_game`, {
+        return fetch(`${ClientEnv.gameServerHttpBase()}/${workerPath}/api/archive_singleplayer_game`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

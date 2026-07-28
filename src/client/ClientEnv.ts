@@ -50,10 +50,9 @@ export class ClientEnv {
         bc.gameServerOrigin ?? window.location.origin,
         "GAME_SERVER_ORIGIN",
       ),
-      accountApiOrigin: requireOrigin(
+      accountApiOrigin:
         bc.accountApiOrigin ?? legacyAccountApiOrigin(bc.jwtAudience),
-        "ACCOUNT_API_ORIGIN",
-      ),
+      cdnOrigin: bc.cdnOrigin ?? "",
       legacyOpenFrontIntegrationsEnabled:
         bc.legacyOpenFrontIntegrationsEnabled ?? false,
       // Optional: only the desktop app injects an explicit game-server host.
@@ -89,7 +88,22 @@ export class ClientEnv {
     return ClientEnv.get().legacyOpenFrontIntegrationsEnabled;
   }
   static jwtIssuer(): string {
-    return ClientEnv.get().accountApiOrigin;
+    return ClientEnv.accountApiOrigin();
+  }
+  static publicOrigin(): string {
+    return ClientEnv.get().publicOrigin;
+  }
+  static gameServerHttpBase(): string {
+    return ClientEnv.get().gameServerOrigin;
+  }
+  static gameServerWsBase(): string {
+    return toWebSocketOrigin(ClientEnv.get().gameServerOrigin);
+  }
+  static accountApiOrigin(): string {
+    return requireOrigin(ClientEnv.get().accountApiOrigin, "ACCOUNT_API_ORIGIN");
+  }
+  static cdnOrigin(): string {
+    return ClientEnv.get().cdnOrigin;
   }
   static async jwkPublicKey(): Promise<JWK> {
     if (ClientEnv.publicKey) return ClientEnv.publicKey;
@@ -129,7 +143,7 @@ export class ClientEnv {
   // public-lobby and in-game WebSockets. The lobby-list and game sockets append
   // their own worker path (e.g. `/w0/lobbies`, `/w0`).
   static serverWsBase(): string {
-    return toWebSocketOrigin(ClientEnv.get().gameServerOrigin);
+    return ClientEnv.gameServerWsBase();
   }
 }
 
@@ -220,5 +234,6 @@ export interface ClientEnvValues {
   publicOrigin: string;
   gameServerOrigin: string;
   accountApiOrigin: string;
+  cdnOrigin: string;
   serverHost?: string;
 }

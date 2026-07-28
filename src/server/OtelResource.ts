@@ -7,7 +7,7 @@ import { ServerEnv } from "./ServerEnv";
 
 export function getOtelResource() {
   return resourceFromAttributes({
-    [ATTR_SERVICE_NAME]: "openfront",
+    [ATTR_SERVICE_NAME]: "iron-borders",
     [ATTR_SERVICE_VERSION]: "1.0.0",
     ...getPromLabels(),
   });

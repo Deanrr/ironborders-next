@@ -99,7 +99,7 @@ export default defineConfig(({ mode }) => {
   const assetManifest: AssetManifest = isProduction
     ? buildPublicAssetManifest(sourceDirs)
     : {};
-  const cdnBase = env.CDN_BASE ?? "";
+  const cdnBase = env.CDN_ORIGIN ?? "";
   const publicOrigin = env.PUBLIC_ORIGIN ?? "http://localhost:9000";
   const gameServerOrigin = env.GAME_SERVER_ORIGIN ?? publicOrigin;
   const accountApiOrigin = env.ACCOUNT_API_ORIGIN ?? "http://localhost:8787";
@@ -118,7 +118,6 @@ export default defineConfig(({ mode }) => {
   const legacyOpenFrontIntegrationsEnabled = false;
   const htmlAssetData = {
     assetManifest: JSON.stringify(assetManifest),
-    cdnBase: JSON.stringify(cdnBase),
     gameEnv: JSON.stringify(env.GAME_ENV ?? "dev"),
     numWorkers: JSON.stringify(parseInt(env.NUM_WORKERS ?? "2", 10)),
     turnstileSiteKey: JSON.stringify(
@@ -163,7 +162,7 @@ export default defineConfig(({ mode }) => {
   // Vite's HTML transform replaces the source <script src="/src/client/Main.ts">
   // with the hashed bundle URL and injects <link rel="modulepreload"> /
   // <link rel="stylesheet"> tags. rewriteAssetsForCdn rewrites those refs to
-  // an EJS placeholder so RenderHtml.ts can prefix them with CDN_BASE at
+  // an EJS placeholder so RenderHtml.ts can prefix them with CDN_ORIGIN at
   // request time.
   const injectCdnBaseTemplate = (): Plugin => ({
     name: "inject-cdn-base-template",

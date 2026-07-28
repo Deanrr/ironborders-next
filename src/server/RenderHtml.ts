@@ -14,7 +14,7 @@ const appShellContentCache = new Map<string, Promise<string>>();
 export async function renderHtmlContent(htmlPath: string): Promise<string> {
   const htmlContent = await fs.readFile(htmlPath, "utf-8");
   const assetManifest = await getRuntimeAssetManifest();
-  const cdnBase = ServerEnv.cdnBase();
+  const cdnBase = ServerEnv.cdnOrigin();
   return ejs.render(htmlContent, {
     gitCommit: JSON.stringify(ServerEnv.gitCommit()),
     assetManifest: JSON.stringify(assetManifest),
@@ -32,7 +32,7 @@ export async function renderHtmlContent(htmlPath: string): Promise<string> {
     publicOrigin: JSON.stringify(ServerEnv.publicOrigin()),
     gameServerOrigin: JSON.stringify(ServerEnv.gameServerOrigin()),
     accountApiOrigin: JSON.stringify(ServerEnv.accountApiOrigin()),
-    cdnOrigin: JSON.stringify(ServerEnv.cdnBase()),
+    cdnOrigin: JSON.stringify(ServerEnv.cdnOrigin()),
     features: JSON.stringify(ServerEnv.runtimeFeatures()),
     legacyOpenFrontIntegrationsEnabled: false,
     manifestHref: buildAssetUrl("manifest.json", assetManifest, cdnBase),

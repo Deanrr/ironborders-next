@@ -63,7 +63,7 @@ describe("PlayerRow", () => {
       assetManifest: {
         "flags/test.svg": "/_assets/flags/test.abc123.svg",
       },
-      cdnBase: "https://cdn.example.test/game-assets",
+      cdnOrigin: "https://cdn.example.test/game-assets",
     };
 
     row = await mountRow({ player: { flag: "/flags/test.svg" } });

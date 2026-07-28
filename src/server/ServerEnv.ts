@@ -80,8 +80,8 @@ export class ServerEnv {
   static host(): string {
     return process.env.HOST ?? "";
   }
-  static cdnBase(): string {
-    return process.env.CDN_BASE ?? "";
+  static cdnOrigin(): string {
+    return process.env.CDN_ORIGIN ?? "";
   }
   static publicOrigin(): string {
     return ServerEnv.validOrigin(
@@ -107,7 +107,7 @@ export class ServerEnv {
   }
   static runtimeFeatures() {
     const enabled = (name: string) => process.env[name] === "true";
-    return {
+    const features = {
       accounts: enabled("FEATURE_ACCOUNTS"),
       clans: enabled("FEATURE_CLANS"),
       store: enabled("FEATURE_STORE"),
@@ -119,6 +119,29 @@ export class ServerEnv {
       leaderboards: enabled("FEATURE_LEADERBOARDS"),
       profiles: enabled("FEATURE_PROFILES"),
     };
+    if (ServerEnv.env() === GameEnv.Prod) {
+      const requirements: Array<[
+        keyof typeof features,
+        Array<keyof typeof features>,
+      ]> = [
+        ["subscriptions", ["accounts", "store"]],
+        ["rewards", ["accounts"]],
+        ["clans", ["accounts"]],
+        ["ranked", ["accounts"]],
+        ["profiles", ["accounts"]],
+      ];
+      for (const [feature, dependencies] of requirements) {
+        if (
+          features[feature] &&
+          dependencies.some((dependency) => !features[dependency])
+        ) {
+          throw new Error(
+            `Invalid runtime feature profile: ${feature} requires ${dependencies.join(" + ")}`,
+          );
+        }
+      }
+    }
+    return features;
   }
   static jwtIssuer(): string {
     return ServerEnv.accountApiOrigin();
@@ -182,7 +205,8 @@ export class ServerEnv {
   }
   static otelEnabled(): boolean {
     return (
-      ServerEnv.gameEnv !== GameEnv.Dev &&
+      ServerEnv.runtimeFeatures().telemetry &&
+      ServerEnv.env() !== GameEnv.Dev &&
       Boolean(ServerEnv.otelEndpoint()) &&
       Boolean(ServerEnv.otelAuthHeader())
     );

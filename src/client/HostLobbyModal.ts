@@ -1468,7 +1468,7 @@ async function createLobby(): Promise<GameInfo> {
   try {
     // No worker prefix and no id: nginx (prod) / the vite dev proxy randomly
     // routes to a worker, which mints a self-owned id and returns it.
-    const response = await fetch(`/api/create_game`, {
+    const response = await fetch(`${ClientEnv.gameServerHttpBase()}/api/create_game`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

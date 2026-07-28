@@ -132,7 +132,7 @@ required for hosted payment flows.
 
 The client rejects `openfront.io` and `openfront.dev` as configured API or
 desktop game-server audiences. Local API host overrides are not read from
-browser storage. Production `DOMAIN`, optional `API_DOMAIN`, `CDN_BASE`,
+browser storage. Production `DOMAIN`, optional `API_DOMAIN`, `CDN_ORIGIN`,
 OpenTelemetry, and telemetry endpoints must be reviewed as part of deployment;
 the application cannot prove domain ownership on the operator's behalf.
 
@@ -150,7 +150,7 @@ disabled by default through the `FEATURE_*` environment flags in
 and operations are controlled by the Iron Borders operator.
 
 Deployment origins are explicit: `PUBLIC_ORIGIN`, `GAME_SERVER_ORIGIN`,
-`ACCOUNT_API_ORIGIN`, and `CDN_ORIGIN`/`CDN_BASE`. They must be absolute HTTP(S)
+`ACCOUNT_API_ORIGIN`, and `CDN_ORIGIN`. They must be absolute HTTP(S)
 origins; the inherited OpenFront domains are rejected.
 
 ## Licensing and source availability

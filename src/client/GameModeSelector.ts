@@ -18,6 +18,7 @@ import { JoinLobbyEvent } from "./Main";
 import { SinglePlayerModal } from "./SinglePlayerModal";
 import { terrainMapFileLoader } from "./TerrainMapFileLoader";
 import { UsernameInput } from "./UsernameInput";
+import { FEATURES } from "./RuntimeProfile";
 import {
   calculateServerTimeOffset,
   getMapName,
@@ -138,17 +139,19 @@ export class GameModeSelector extends LitElement {
           )}
         </div>
         <!-- Create/ranked/join: mobile only, below solo -->
-        <div class="sm:hidden grid grid-cols-3 gap-4 h-14">
+        <div class="sm:hidden grid ${FEATURES.ranked ? "grid-cols-3" : "grid-cols-2"} gap-4 h-14">
           ${this.renderSmallActionCard(
             translateText("main.create"),
             this.openHostLobby,
             "bg-surface hover:brightness-[1.08] active:brightness-[0.95] hover:scale-105 hover:shadow-[var(--shadow-action-card-hover)]",
           )}
-          ${this.renderSmallActionCard(
+          ${FEATURES.ranked
+            ? this.renderSmallActionCard(
             translateText("mode_selector.ranked_title"),
             this.openRankedMenu,
             "bg-surface hover:brightness-[1.08] active:brightness-[0.95] hover:scale-105 hover:shadow-[var(--shadow-action-card-hover)]",
-          )}
+          )
+            : nothing}
           ${this.renderSmallActionCard(
             translateText("main.join"),
             this.openJoinLobby,
@@ -219,17 +222,19 @@ export class GameModeSelector extends LitElement {
           )}
         </div>
         <!-- Bottom row: create + ranked + join (desktop only) -->
-        <div class="hidden sm:grid grid-cols-3 gap-4 h-14">
+        <div class="hidden sm:grid ${FEATURES.ranked ? "grid-cols-3" : "grid-cols-2"} gap-4 h-14">
           ${this.renderSmallActionCard(
             translateText("main.create"),
             this.openHostLobby,
             "bg-surface hover:brightness-[1.08] active:brightness-[0.95] hover:scale-105 hover:shadow-[var(--shadow-action-card-hover)]",
           )}
-          ${this.renderSmallActionCard(
+          ${FEATURES.ranked
+            ? this.renderSmallActionCard(
             translateText("mode_selector.ranked_title"),
             this.openRankedMenu,
             "bg-surface hover:brightness-[1.08] active:brightness-[0.95] hover:scale-105 hover:shadow-[var(--shadow-action-card-hover)]",
-          )}
+          )
+            : nothing}
           ${this.renderSmallActionCard(
             translateText("main.join"),
             this.openJoinLobby,
@@ -246,6 +251,7 @@ export class GameModeSelector extends LitElement {
   }
 
   private openRankedMenu = () => {
+    if (!FEATURES.ranked) return;
     if (!this.validateUsername()) return;
     window.showPage?.("page-ranked");
   };

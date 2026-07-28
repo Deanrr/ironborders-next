@@ -1,3 +1,24 @@
+import { FEATURES } from "./RuntimeProfile";
+
+function pageIsEnabled(pageId: string): boolean {
+  switch (pageId) {
+    case "page-item-store":
+      return FEATURES.store;
+    case "page-account":
+      return FEATURES.accounts;
+    case "page-clan":
+      return FEATURES.clans;
+    case "page-ranked":
+      return FEATURES.ranked;
+    case "page-leaderboard":
+      return FEATURES.leaderboards;
+    case "page-profile":
+      return FEATURES.profiles;
+    default:
+      return true;
+  }
+}
+
 export function closeMobileSidebar() {
   const sidebar = document.getElementById("sidebar-menu");
   const backdrop = document.getElementById("mobile-menu-backdrop");
@@ -14,6 +35,9 @@ export function closeMobileSidebar() {
 
 export function initNavigation() {
   const showPage = (pageId: string) => {
+    if (!pageIsEnabled(pageId)) {
+      pageId = "page-play";
+    }
     window.currentPageId = pageId;
 
     // Close mobile sidebar if a nav item was clicked

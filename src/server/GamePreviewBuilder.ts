@@ -142,7 +142,7 @@ export async function buildPreview(
   publicInfo: ExternalGameInfo | null,
 ): Promise<PreviewMeta> {
   const assetManifest = await getRuntimeAssetManifest();
-  const cdnBase = ServerEnv.cdnBase();
+  const cdnBase = ServerEnv.cdnOrigin();
   const buildAbsoluteAssetUrl = (path: string) =>
     new URL(buildAssetUrl(path, assetManifest, cdnBase), origin).toString();
   const isFinished = !!publicInfo?.info?.end;

@@ -242,31 +242,41 @@ class Client {
     // Register modals with the URL router. Lobby modals (join/host) and
     // matchmaking are intentionally omitted — they own their own URL state
     // (path-based) or none at all.
-    modalRouter.register("store", {
-      tag: "store-modal",
-      pageId: "page-item-store",
-    });
+    if (FEATURES.store) {
+      modalRouter.register("store", {
+        tag: "store-modal",
+        pageId: "page-item-store",
+      });
+    }
     modalRouter.register("settings", {
       tag: "user-setting",
       pageId: "page-settings",
     });
-    modalRouter.register("leaderboard", {
-      tag: "leaderboard-modal",
-      pageId: "page-leaderboard",
-    });
-    modalRouter.register("clan", { tag: "clan-modal", pageId: "page-clan" });
-    modalRouter.register("account", {
-      tag: "account-modal",
-      pageId: "page-account",
-    });
+    if (FEATURES.leaderboards) {
+      modalRouter.register("leaderboard", {
+        tag: "leaderboard-modal",
+        pageId: "page-leaderboard",
+      });
+    }
+    if (FEATURES.clans) {
+      modalRouter.register("clan", { tag: "clan-modal", pageId: "page-clan" });
+    }
+    if (FEATURES.accounts) {
+      modalRouter.register("account", {
+        tag: "account-modal",
+        pageId: "page-account",
+      });
+    }
     modalRouter.register("stats", {
       tag: "game-stats-modal",
       pageId: "page-stats",
     });
-    modalRouter.register("profile", {
-      tag: "player-profile-modal",
-      pageId: "page-profile",
-    });
+    if (FEATURES.profiles) {
+      modalRouter.register("profile", {
+        tag: "player-profile-modal",
+        pageId: "page-profile",
+      });
+    }
     modalRouter.register("help", { tag: "help-modal", pageId: "page-help" });
     modalRouter.register("news", { tag: "news-modal", pageId: "page-news" });
     modalRouter.register("language", {
@@ -277,10 +287,12 @@ class Client {
       tag: "single-player-modal",
       pageId: "page-single-player",
     });
-    modalRouter.register("ranked", {
-      tag: "ranked-modal",
-      pageId: "page-ranked",
-    });
+    if (FEATURES.ranked) {
+      modalRouter.register("ranked", {
+        tag: "ranked-modal",
+        pageId: "page-ranked",
+      });
+    }
     modalRouter.register("troubleshooting", {
       tag: "troubleshooting-modal",
       pageId: "page-troubleshooting",
@@ -364,10 +376,12 @@ class Client {
       "update-game-config",
       this.handleUpdateGameConfig.bind(this),
     );
-    document.addEventListener(
-      "open-matchmaking",
-      this.handleOpenMatchmaking.bind(this),
-    );
+    if (FEATURES.ranked) {
+      document.addEventListener(
+        "open-matchmaking",
+        this.handleOpenMatchmaking.bind(this),
+      );
+    }
 
     const hlpModal = document.querySelector("help-modal") as HelpModal;
     if (!hlpModal || !(hlpModal instanceof HelpModal)) {
@@ -398,9 +412,11 @@ class Client {
       });
     });
 
-    this.storeModal = document.getElementById("page-item-store") as StoreModal;
-    if (!this.storeModal || !(this.storeModal instanceof StoreModal)) {
-      console.warn("Store modal element not found");
+    if (FEATURES.store) {
+      this.storeModal = document.getElementById("page-item-store") as StoreModal;
+      if (!this.storeModal || !(this.storeModal instanceof StoreModal)) {
+        console.warn("Store modal element not found");
+      }
     }
 
     const cosmeticsModal = document.getElementById(
@@ -422,39 +438,44 @@ class Client {
       if (mobileCosmetics) mobileCosmetics.style.display = "none";
     }
 
-    this.storeModal.refresh();
+    if (FEATURES.store) {
+      this.storeModal.refresh();
+      window.addEventListener("showPage", (e: any) => {
+        if (typeof e?.detail === "string" && e.detail === "page-play") {
+          setTimeout(() => this.storeModal.refresh(), 50);
+        }
+      });
+    }
 
-    window.addEventListener("showPage", (e: any) => {
-      if (typeof e?.detail === "string" && e.detail === "page-play") {
-        setTimeout(() => {
-          this.storeModal.refresh();
-        }, 50);
+    if (FEATURES.accounts) {
+      this.tokenLoginModal = document.querySelector(
+        "token-login",
+      ) as TokenLoginModal;
+      if (
+        !this.tokenLoginModal ||
+        !(this.tokenLoginModal instanceof TokenLoginModal)
+      ) {
+        console.warn("Token login modal element not found");
       }
-    });
-
-    this.tokenLoginModal = document.querySelector(
-      "token-login",
-    ) as TokenLoginModal;
-    if (
-      !this.tokenLoginModal ||
-      !(this.tokenLoginModal instanceof TokenLoginModal)
-    ) {
-      console.warn("Token login modal element not found");
     }
 
-    this.matchmakingModal = document.querySelector(
-      "matchmaking-modal",
-    ) as MatchmakingModal;
-    if (
-      !this.matchmakingModal ||
-      !(this.matchmakingModal instanceof MatchmakingModal)
-    ) {
-      console.warn("Matchmaking modal element not found");
+    if (FEATURES.ranked) {
+      this.matchmakingModal = document.querySelector(
+        "matchmaking-modal",
+      ) as MatchmakingModal;
+      if (
+        !this.matchmakingModal ||
+        !(this.matchmakingModal instanceof MatchmakingModal)
+      ) {
+        console.warn("Matchmaking modal element not found");
+      }
     }
 
-    this.rewardsModal = document.querySelector("rewards-modal") as RewardsModal;
-    if (!this.rewardsModal || !(this.rewardsModal instanceof RewardsModal)) {
-      console.warn("Rewards modal element not found");
+    if (FEATURES.rewards) {
+      this.rewardsModal = document.querySelector("rewards-modal") as RewardsModal;
+      if (!this.rewardsModal || !(this.rewardsModal instanceof RewardsModal)) {
+        console.warn("Rewards modal element not found");
+      }
     }
 
     const onUserMe = async (userMeResponse: UserMeResponse | false) => {
@@ -517,7 +538,7 @@ class Client {
 
         // Unclaimed-rewards popup.
         const rewards = userMeResponse.player.rewards ?? [];
-        if (rewards.length > 0 && cleanHomepage) {
+        if (FEATURES.rewards && rewards.length > 0 && cleanHomepage) {
           this.rewardsModal?.openWithRewards(rewards);
         }
       }
@@ -705,7 +726,7 @@ class Client {
     const params = new URLSearchParams(decodedHash.split("?")[1] || "");
 
     // Handle different hash sections
-    if (decodedHash.startsWith("#purchase-completed")) {
+    if (FEATURES.store && decodedHash.startsWith("#purchase-completed")) {
       // Parse params after the ?
       const status = params.get("status");
 
@@ -767,7 +788,7 @@ class Client {
       return;
     }
 
-    if (decodedHash.startsWith("#token-login")) {
+    if (FEATURES.accounts && decodedHash.startsWith("#token-login")) {
       const token = params.get("token-login");
 
       if (!token) {
@@ -811,7 +832,7 @@ class Client {
     if (modalRouter.routeFromHash()) {
       return;
     }
-    if (decodedHash.startsWith("#affiliate=")) {
+    if (FEATURES.store && decodedHash.startsWith("#affiliate=")) {
       const affiliateCode = decodedHash.replace("#affiliate=", "");
       strip();
       if (affiliateCode) {
@@ -823,7 +844,7 @@ class Client {
     }
 
     const requeueMode = this.consumeRequeueUrl();
-    if (requeueMode !== null) {
+    if (FEATURES.ranked && requeueMode !== null) {
       document.dispatchEvent(
         new CustomEvent("open-matchmaking", {
           detail: { mode: requeueMode },
@@ -1052,7 +1073,7 @@ class Client {
   private handleOpenMatchmaking(
     event: CustomEvent<{ mode?: "1v1" | "2v2" } | undefined>,
   ) {
-    if (!this.matchmakingModal) return;
+    if (!FEATURES.ranked || !this.matchmakingModal) return;
     // Always set the mode: dispatchers without a detail (homepage button,
     // requeue URL) mean 1v1 and must reset a lingering 2v2 selection.
     this.matchmakingModal.mode = event.detail?.mode === "2v2" ? "2v2" : "1v1";

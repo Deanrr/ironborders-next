@@ -60,7 +60,7 @@ export class PublicLobbySocket {
 
       // WS origin comes from ClientEnv (same-origin on web, audience-derived on
       // the desktop app://openfront origin), not window.location.host.
-      const wsUrl = `${ClientEnv.serverWsBase()}${this.workerPath}/lobbies`;
+      const wsUrl = `${ClientEnv.gameServerWsBase()}${this.workerPath}/lobbies`;
 
       this.ws = new WebSocket(wsUrl);
       this.wsAttemptCounted = false;

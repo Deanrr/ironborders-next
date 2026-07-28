@@ -142,7 +142,7 @@ ctx.addEventListener("message", async (e: MessageEvent<MainThreadMessage>) => {
       try {
         // Set before createGameRunner so map fetches via mapLoader pick up the
         // CDN base. Workers have no `window`, so AssetUrls falls back to this.
-        globalThis.__CDN_BASE__ = message.cdnBase;
+        globalThis.__CDN_ORIGIN__ = message.cdnOrigin;
         gameRunner = createGameRunner(
           message.gameStartInfo,
           message.clientID,

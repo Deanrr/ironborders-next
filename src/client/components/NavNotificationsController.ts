@@ -2,6 +2,7 @@ import { ReactiveController, ReactiveControllerHost } from "lit";
 import version from "resources/version.txt?raw";
 import { getCosmeticsHash } from "../Cosmetics";
 import { getGamesPlayed } from "../Utils";
+import { FEATURES } from "../RuntimeProfile";
 
 const HELP_SEEN_KEY = "helpSeen";
 const STORE_SEEN_HASH_KEY = "storeSeenHash";
@@ -26,13 +27,15 @@ export class NavNotificationsController implements ReactiveController {
 
   hostConnected(): void {
     // Check if cosmetics have changed
-    getCosmeticsHash()
-      .then((hash: string | null) => {
-        const seenHash = localStorage.getItem(STORE_SEEN_HASH_KEY);
-        this._hasNewCosmetics = hash !== null && hash !== seenHash;
-        this.host.requestUpdate();
-      })
-      .catch(() => {});
+    if (FEATURES.store) {
+      getCosmeticsHash()
+        .then((hash: string | null) => {
+          const seenHash = localStorage.getItem(STORE_SEEN_HASH_KEY);
+          this._hasNewCosmetics = hash !== null && hash !== seenHash;
+          this.host.requestUpdate();
+        })
+        .catch(() => {});
+    }
 
     // Check if version has changed
     const currentVersion = this.normalizedVersion;
@@ -72,6 +75,7 @@ export class NavNotificationsController implements ReactiveController {
   };
 
   onStoreClick = (): void => {
+    if (!FEATURES.store) return;
     this._hasNewCosmetics = false;
     getCosmeticsHash()
       .then((hash: string | null) => {

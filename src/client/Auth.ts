@@ -7,6 +7,7 @@ import { getApiBase, getAudience } from "./Api";
 import { crazyGamesSDK } from "./CrazyGamesSDK";
 import { steamSDK } from "./SteamSDK";
 import { generateCryptoRandomUUID } from "./Utils";
+import { FEATURES } from "./RuntimeProfile";
 
 export type UserAuth = { jwt: string; claims: TokenPayload } | false;
 
@@ -73,6 +74,7 @@ export async function tempTokenLogin(token: string): Promise<string | null> {
 }
 
 export async function getAuthHeader(): Promise<string> {
+  if (!FEATURES.accounts) return "";
   const userAuthResult = await userAuth();
   if (!userAuthResult) return "";
   const { jwt } = userAuthResult;
@@ -114,6 +116,7 @@ export async function isLoggedIn(): Promise<boolean> {
 export async function userAuth(
   shouldRefresh: boolean = true,
 ): Promise<UserAuth> {
+  if (!FEATURES.accounts) return false;
   try {
     const jwt = __jwt;
     if (!jwt) {
@@ -342,6 +345,7 @@ export async function sendMagicLink(email: string): Promise<boolean> {
 
 // WARNING: DO NOT EXPOSE THIS ID
 export async function getPlayToken(): Promise<string> {
+  if (!FEATURES.accounts) return getPersistentIDFromLocalStorage();
   const result = await userAuth();
   if (result !== false) return result.jwt;
   return getPersistentIDFromLocalStorage();
