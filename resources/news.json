@@ -1,8 +1,8 @@
 [
   {
     "id": "iron-borders-main-map",
-    "title": "Iron Borders Main Map Update",
-    "description": "The landing page now opens on the Iron Borders war map with a cleaner header, title placement, and national-war presentation.",
+    "title": "Iron Borders Fronts and National War UI",
+    "description": "The war map now shows capitals, strategic locations, connected fronts, momentum, and national status summaries. Major captures, breakthroughs, coalitions, and threats are highlighted in the event feed with contextual audio cues.",
     "url": null,
     "type": "announcement"
   },

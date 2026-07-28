@@ -1,21 +1,63 @@
 # Iron Borders Update
 
-## Main page
+This update makes the war easier to read at a glance. The underlying territorial
+simulation is still continuous and tile-based, but the interface now explains
+what each battle means at a national level.
 
-- Added the Iron Borders strategic war-map background to the landing page.
-- Moved the large Iron Borders title below the lobby map and game-mode controls.
-- Removed the version/hex-code line from the top navigation header.
-- Added a darker vignette so the lobby controls remain readable over the map.
+## Landing page and lobby
 
-## National war presentation
+- The main page now opens on the Iron Borders strategic war map instead of the
+  plain background.
+- The large Iron Borders title now sits below the lobby map and game-mode
+  controls, keeping the playable content as the visual focus.
+- Removed the small version/hex-code line from the desktop and mobile headers.
+- Added a darker map vignette so lobby cards, buttons, and news remain readable
+  over the artwork.
+- Public development games now have a 30-second creation interval instead of a
+  5-second burst, making the lobby list easier to follow.
 
-- Added connected national fronts with pressure, momentum, direction, and territory change summaries.
-- Added capitals, strategic locations, authority states, conquest milestones, resistance, supply, overextension, and war exhaustion framing.
-- Added doctrine-aware national priorities, faction objectives, coalition events, and capture attribution in the event feed.
+## National war interface
+
+- Player nations now expose a readable national status summary beside the map:
+  authority, doctrine, capital status, territory, stability, resistance,
+  supply, overextension, war exhaustion, production, allies, enemies, recent
+  gains/losses, active fronts, strategic locations, and faction objective
+  progress.
+- Capitals are marked directly on the map. Threatened, occupied, displaced, or
+  fully occupied capitals receive stronger warning markers.
+- Added map markers for major cities, ports, industrial regions, chokepoints,
+  crossings, and strategic islands. Markers show whether a location is secure,
+  threatened, or captured and can be clicked to focus the map.
+- Connected conflicts are presented as named fronts with attacker/defender,
+  direction of advance, pressure, committed troops, territory gained/lost, and
+  momentum such as advancing, stalled, reinforced, overextended, or collapsing.
+- Front lines, direction arrows, and boundary accents are rendered on the map;
+  selecting a front opens a compact inspector with its current summary.
+- Major national events now create short-lived map pulses at the affected
+  location, making breakthroughs, captures, liberation attempts, and strategic
+  threats visible without searching the event log.
+
+## Events, diplomacy, and feedback
+
+- The event feed now reports border breaches, defensive-line breaks, major
+  regions secured, capital threats/captures, government displacement,
+  occupation, liberation, elimination, supply crises, production disruption,
+  war exhaustion, overextension, and strategic-location changes.
+- Front openings, momentum changes, and front endings are recorded with the
+  front name so players can follow a war as it develops.
+- Coalition formation/dissolution, faction objectives, objective completion,
+  and victory readiness now appear as highlighted events.
+- Important national, front, and faction events now have contextual sound cues
+  in addition to the visual feed entry.
+- Account-only and external-platform controls are now hidden when the active
+  runtime profile does not provide those services, preventing unusable buttons
+  from appearing in the standard Iron Borders client.
 
 ## Validation
 
-- Runtime-profile tests continue to pass in `iron-borders-default` and `all-features` modes.
+- Runtime-profile tests continue to pass in `iron-borders-default` and
+  `all-features` modes.
+- Client lint, production build, and focused asset-render tests pass.
 
 ---
 
