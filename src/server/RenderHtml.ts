@@ -47,17 +47,7 @@ export async function renderHtmlContent(htmlPath: string): Promise<string> {
       cdnBase,
     ),
     backgroundImageUrl: buildAssetUrl(
-      "images/IronBordersBackground.svg",
-      assetManifest,
-      cdnBase,
-    ),
-    desktopLogoImageUrl: buildAssetUrl(
-      "images/IronBordersLogo.svg",
-      assetManifest,
-      cdnBase,
-    ),
-    mobileLogoImageUrl: buildAssetUrl(
-      "images/IronBordersMark.svg",
+      "images/IronBordersMainBackground.png",
       assetManifest,
       cdnBase,
     ),

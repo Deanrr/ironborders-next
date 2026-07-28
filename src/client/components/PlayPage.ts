@@ -151,6 +151,17 @@ export class PlayPage extends LitElement {
         </div>
 
         <game-mode-selector></game-mode-selector>
+
+        <div
+          class="w-full flex justify-center px-4 pb-3 lg:pb-6 pointer-events-none"
+          aria-hidden="true"
+        >
+          <img
+            src=${assetUrl("images/IronBordersLogo.svg")}
+            alt=""
+            class="w-[min(760px,92vw)] h-auto opacity-60 drop-shadow-[0_8px_24px_rgba(0,0,0,0.55)]"
+          />
+        </div>
       </div>
     `;
   }

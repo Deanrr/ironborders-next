@@ -1,5 +1,12 @@
 [
   {
+    "id": "iron-borders-main-map",
+    "title": "Iron Borders Main Map Update",
+    "description": "The landing page now opens on the Iron Borders war map with a cleaner header, title placement, and national-war presentation.",
+    "url": null,
+    "type": "announcement"
+  },
+  {
     "id": "iron-borders-foundation",
     "title": "Iron Borders Foundation",
     "description": "Multiplayer, private lobbies, and solo play are available from this server.",

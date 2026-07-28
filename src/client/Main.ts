@@ -1,4 +1,3 @@
-import version from "resources/version.txt?raw";
 import { ClientEnv } from "src/client/ClientEnv";
 import { isTemporaryUsername, UserMeResponse } from "../core/ApiSchemas";
 import { assetUrl } from "../core/AssetUrls";
@@ -13,16 +12,13 @@ import {
 import { GameEnv } from "../core/configuration/Config";
 import { GameType } from "../core/game/Game";
 import { UserSettings } from "../core/game/UserSettings";
-import "./AccountModal";
 import { getUserMe, invalidateUserMe } from "./Api";
 import { userAuth } from "./Auth";
-import "./ClanModal";
 import { joinLobby, type JoinLobbyResult } from "./ClientGameRunner";
 import { getPlayerCosmeticsRefs } from "./Cosmetics";
 import "./CosmeticsInput";
 import "./CosmeticsModal";
 import { CosmeticsModal } from "./CosmeticsModal";
-import { updateCrazyGamesNavButton } from "./CrazyGamesAccountButton";
 import { crazyGamesSDK } from "./CrazyGamesSDK";
 import "./FlagInput";
 import { FlagInput } from "./FlagInput";
@@ -32,7 +28,6 @@ import "./GameModeSelector";
 import { GameModeSelector } from "./GameModeSelector";
 import { GameStartingModal } from "./GameStartingModal";
 import "./GameStatsModal";
-import "./GoogleAdElement";
 import { HelpModal } from "./HelpModal";
 import "./HomepagePromos";
 import { HostLobbyModal as HostPrivateLobbyModal } from "./HostLobbyModal";
@@ -41,19 +36,16 @@ import { JoinLobbyModal } from "./JoinLobbyModal";
 import "./LangSelector";
 import { LangSelector } from "./LangSelector";
 import { initLayout } from "./Layout";
-import "./LeaderboardModal";
-import "./Matchmaking";
-import { MatchmakingModal } from "./Matchmaking";
+import type { MatchmakingModal } from "./Matchmaking";
 import { modalRouter } from "./ModalRouter";
 import { initNavigation } from "./Navigation";
 import "./NewsModal";
-import "./PlayerProfileModal";
-import { RewardsModal } from "./RewardsModal";
+import { loadOptionalFeatures } from "./OptionalFeatures";
+import type { RewardsModal } from "./RewardsModal";
 import { FEATURES } from "./RuntimeProfile";
 import "./SinglePlayerModal";
-import "./SteamLinkSignpost";
-import { StoreModal } from "./Store";
-import { TokenLoginModal } from "./TokenLoginModal";
+import type { StoreModal } from "./Store";
+import type { TokenLoginModal } from "./TokenLoginModal";
 import {
   SendKickPlayerIntentEvent,
   SendToggleGameStartTimer,
@@ -63,7 +55,6 @@ import { UserSettingModal } from "./UserSettingModal";
 import "./UsernameInput";
 import { genAnonUsername, UsernameInput } from "./UsernameInput";
 import { incrementGamesPlayed, isInIframe, translateText } from "./Utils";
-import "./components/MarketingConsentToast";
 import { installSafariPinchZoomBlocker } from "./utilities/DisableSafariPinchZoom";
 
 import "./components/DesktopNavBar";
@@ -71,7 +62,6 @@ import "./components/Footer";
 import "./components/MainLayout";
 import "./components/MobileNavBar";
 import "./components/PlayPage";
-import "./components/RankedModal";
 import "./components/baseComponents/Button";
 import "./components/baseComponents/Modal";
 import "./styles.css";
@@ -80,6 +70,16 @@ import "./styles/core/variables.css";
 import "./styles/layout/container.css";
 import "./styles/layout/header.css";
 import "./styles/modal/chat.css";
+
+function isRegisteredElement<T extends HTMLElement>(
+  element: T | null,
+  tagName: string,
+): element is T {
+  const constructor = customElements.get(tagName);
+  return element !== null && constructor !== undefined
+    ? element instanceof constructor
+    : false;
+}
 
 function updateAccountNavButton(userMeResponse: UserMeResponse | false) {
   const button = document.getElementById("nav-account-button");
@@ -310,30 +310,12 @@ class Client {
         ? null
         : getTurnstileToken();
 
-    // Wait for components to render before setting version
-    await customElements.whenDefined("mobile-nav-bar");
-    await customElements.whenDefined("desktop-nav-bar");
-
     const openFrontFont = new FontFace(
       "OpenFront",
       `url(${assetUrl("fonts/OpenFront.ttf")})`,
     );
     document.fonts.add(openFrontFont);
     openFrontFont.load().catch(() => {});
-
-    const versionElements = document.querySelectorAll(
-      "#game-version, .game-version-display",
-    );
-    if (versionElements.length === 0) {
-      console.warn("Game version element not found");
-    } else {
-      const trimmed = version.trim();
-      const displayVersion = trimmed.startsWith("v") ? trimmed : `v${trimmed}`;
-      versionElements.forEach((el) => {
-        (el as HTMLElement).style.fontFamily = '"OpenFront", Inter, sans-serif';
-        el.textContent = displayVersion;
-      });
-    }
 
     const langSelector = document.querySelector(
       "lang-selector",
@@ -413,8 +395,10 @@ class Client {
     });
 
     if (FEATURES.store) {
-      this.storeModal = document.getElementById("page-item-store") as StoreModal;
-      if (!this.storeModal || !(this.storeModal instanceof StoreModal)) {
+      this.storeModal = document.getElementById(
+        "page-item-store",
+      ) as StoreModal;
+      if (!isRegisteredElement(this.storeModal, "store-modal")) {
         console.warn("Store modal element not found");
       }
     }
@@ -451,10 +435,7 @@ class Client {
       this.tokenLoginModal = document.querySelector(
         "token-login",
       ) as TokenLoginModal;
-      if (
-        !this.tokenLoginModal ||
-        !(this.tokenLoginModal instanceof TokenLoginModal)
-      ) {
+      if (!isRegisteredElement(this.tokenLoginModal, "token-login")) {
         console.warn("Token login modal element not found");
       }
     }
@@ -463,17 +444,16 @@ class Client {
       this.matchmakingModal = document.querySelector(
         "matchmaking-modal",
       ) as MatchmakingModal;
-      if (
-        !this.matchmakingModal ||
-        !(this.matchmakingModal instanceof MatchmakingModal)
-      ) {
+      if (!isRegisteredElement(this.matchmakingModal, "matchmaking-modal")) {
         console.warn("Matchmaking modal element not found");
       }
     }
 
     if (FEATURES.rewards) {
-      this.rewardsModal = document.querySelector("rewards-modal") as RewardsModal;
-      if (!this.rewardsModal || !(this.rewardsModal instanceof RewardsModal)) {
+      this.rewardsModal = document.querySelector(
+        "rewards-modal",
+      ) as RewardsModal;
+      if (!isRegisteredElement(this.rewardsModal, "rewards-modal")) {
         console.warn("Rewards modal element not found");
       }
     }
@@ -1151,13 +1131,15 @@ const hideCrazyGamesElements = () => {
 };
 
 // Initialize the client when the DOM is loaded
-const bootstrap = () => {
+const bootstrap = async () => {
+  await loadOptionalFeatures();
+
   // Prevent Safari's page-level pinch-zoom, which ignores `user-scalable=no`
   // on iOS and can softlock the HUD. See issue #2330.
   installSafariPinchZoomBlocker();
 
   initLayout();
-  new Client().initialize();
+  await new Client().initialize();
   initNavigation();
 
   // Hide elements immediately
@@ -1169,13 +1151,21 @@ const bootstrap = () => {
 
   // Populate the CrazyGames account buttons once the nav/top-bar have rendered
   // (onUserMe also refreshes them after auth and on mid-session sign-in).
-  setTimeout(() => void updateCrazyGamesNavButton(), 500);
+  if (FEATURES.accounts && FEATURES.externalPlatforms) {
+    setTimeout(
+      () =>
+        void import("./CrazyGamesAccountButton").then(
+          ({ updateCrazyGamesNavButton }) => updateCrazyGamesNavButton(),
+        ),
+      500,
+    );
+  }
 };
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", bootstrap);
+  document.addEventListener("DOMContentLoaded", () => void bootstrap());
 } else {
-  bootstrap();
+  void bootstrap();
 }
 
 async function getTurnstileToken(): Promise<{

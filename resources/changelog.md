@@ -1,3 +1,24 @@
+# Iron Borders Update
+
+## Main page
+
+- Added the Iron Borders strategic war-map background to the landing page.
+- Moved the large Iron Borders title below the lobby map and game-mode controls.
+- Removed the version/hex-code line from the top navigation header.
+- Added a darker vignette so the lobby controls remain readable over the map.
+
+## National war presentation
+
+- Added connected national fronts with pressure, momentum, direction, and territory change summaries.
+- Added capitals, strategic locations, authority states, conquest milestones, resistance, supply, overextension, and war exhaustion framing.
+- Added doctrine-aware national priorities, faction objectives, coalition events, and capture attribution in the event feed.
+
+## Validation
+
+- Runtime-profile tests continue to pass in `iron-borders-default` and `all-features` modes.
+
+---
+
 - This is a sample changelog based off of v0.24.0.
 - This file will be replaced with real release notes during the release build process.
   - Indented bullets look like this

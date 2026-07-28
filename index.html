@@ -91,14 +91,6 @@
         "--background-image-url",
         `url("<%- backgroundImageUrl %>")`,
       );
-      document.documentElement.style.setProperty(
-        "--desktop-logo-image-url",
-        `url("<%- desktopLogoImageUrl %>")`,
-      );
-      document.documentElement.style.setProperty(
-        "--mobile-logo-image-url",
-        `url("<%- mobileLogoImageUrl %>")`,
-      );
     </script>
 
     <script data-owner-controlled-services="disabled">
@@ -117,22 +109,21 @@
   <body
     class="h-full select-none font-sans min-h-screen bg-neutral-800 transition-opacity duration-300 ease-in-out flex flex-row overflow-hidden"
   >
-    <div id="hex-grid" class="fixed inset-0 -z-50 pointer-events-none">
+    <div
+      id="hex-grid"
+      class="fixed inset-0 -z-50 pointer-events-none [.in-game_&]:hidden"
+    >
       <div
         id="background-layer"
-        class="absolute inset-x-0 top-0 -bottom-[4cm] bg-cover opacity-30 [filter:brightness(1.0)] dark:[filter:sepia(0.2)_saturate(1.2)_hue-rotate(180deg)_brightness(0.9)]"
+        class="absolute inset-0 bg-cover bg-center opacity-70 [filter:brightness(0.72)_saturate(1.12)]"
         style="
           background-image: var(--background-image-url);
-          background-position: center top;
+          background-position: center center;
         "
       ></div>
       <div
-        class="absolute inset-0 bg-center bg-no-repeat bg-contain hidden lg:block"
-        style="background-image: var(--desktop-logo-image-url); opacity: 0.5"
-      ></div>
-      <div
-        class="absolute inset-0 bg-center bg-no-repeat bg-contain lg:hidden"
-        style="background-image: var(--mobile-logo-image-url); opacity: 0.5"
+        class="absolute inset-0 bg-gradient-to-b from-slate-950/30 via-transparent to-slate-950/65"
+        aria-hidden="true"
       ></div>
     </div>
 
@@ -334,6 +325,9 @@
     <game-left-sidebar></game-left-sidebar>
     <performance-overlay></performance-overlay>
     <player-info-overlay></player-info-overlay>
+    <national-locations-overlay
+      style="position: fixed; inset: 0; z-index: 40; pointer-events: none"
+    ></national-locations-overlay>
     <heads-up-message></heads-up-message>
 
     <!-- Scripts -->

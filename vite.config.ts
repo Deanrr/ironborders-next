@@ -11,6 +11,7 @@ import {
   buildAssetUrl,
   rewriteAssetsForCdn,
 } from "./src/core/AssetUrls";
+import { parseRuntimeFeaturesFromEnv } from "./src/core/configuration/RuntimeProfile";
 import {
   buildPublicAssetManifest,
   copyRootPublicFiles,
@@ -103,18 +104,7 @@ export default defineConfig(({ mode }) => {
   const publicOrigin = env.PUBLIC_ORIGIN ?? "http://localhost:9000";
   const gameServerOrigin = env.GAME_SERVER_ORIGIN ?? publicOrigin;
   const accountApiOrigin = env.ACCOUNT_API_ORIGIN ?? "http://localhost:8787";
-  const features = {
-    accounts: env.FEATURE_ACCOUNTS === "true",
-    clans: env.FEATURE_CLANS === "true",
-    store: env.FEATURE_STORE === "true",
-    subscriptions: env.FEATURE_SUBSCRIPTIONS === "true",
-    rewards: env.FEATURE_REWARDS === "true",
-    ranked: env.FEATURE_RANKED === "true",
-    telemetry: env.FEATURE_TELEMETRY === "true",
-    externalPlatforms: env.FEATURE_EXTERNAL_PLATFORMS === "true",
-    leaderboards: env.FEATURE_LEADERBOARDS === "true",
-    profiles: env.FEATURE_PROFILES === "true",
-  };
+  const features = parseRuntimeFeaturesFromEnv(env);
   const legacyOpenFrontIntegrationsEnabled = false;
   const htmlAssetData = {
     assetManifest: JSON.stringify(assetManifest),
@@ -143,17 +133,7 @@ export default defineConfig(({ mode }) => {
       cdnBase,
     ),
     backgroundImageUrl: buildAssetUrl(
-      "images/IronBordersBackground.svg",
-      assetManifest,
-      cdnBase,
-    ),
-    desktopLogoImageUrl: buildAssetUrl(
-      "images/IronBordersLogo.svg",
-      assetManifest,
-      cdnBase,
-    ),
-    mobileLogoImageUrl: buildAssetUrl(
-      "images/IronBordersMark.svg",
+      "images/IronBordersMainBackground.png",
       assetManifest,
       cdnBase,
     ),
