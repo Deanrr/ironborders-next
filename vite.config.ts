@@ -100,6 +100,21 @@ export default defineConfig(({ mode }) => {
     ? buildPublicAssetManifest(sourceDirs)
     : {};
   const cdnBase = env.CDN_BASE ?? "";
+  const publicOrigin = env.PUBLIC_ORIGIN ?? "http://localhost:9000";
+  const gameServerOrigin = env.GAME_SERVER_ORIGIN ?? publicOrigin;
+  const accountApiOrigin = env.ACCOUNT_API_ORIGIN ?? "http://localhost:8787";
+  const features = {
+    accounts: env.FEATURE_ACCOUNTS === "true",
+    clans: env.FEATURE_CLANS === "true",
+    store: env.FEATURE_STORE === "true",
+    subscriptions: env.FEATURE_SUBSCRIPTIONS === "true",
+    rewards: env.FEATURE_REWARDS === "true",
+    ranked: env.FEATURE_RANKED === "true",
+    telemetry: env.FEATURE_TELEMETRY === "true",
+    externalPlatforms: env.FEATURE_EXTERNAL_PLATFORMS === "true",
+    leaderboards: env.FEATURE_LEADERBOARDS === "true",
+    profiles: env.FEATURE_PROFILES === "true",
+  };
   const legacyOpenFrontIntegrationsEnabled = false;
   const htmlAssetData = {
     assetManifest: JSON.stringify(assetManifest),
@@ -111,6 +126,11 @@ export default defineConfig(({ mode }) => {
     ),
     jwtAudience: JSON.stringify(env.DOMAIN ?? "localhost"),
     instanceId: JSON.stringify(env.INSTANCE_ID ?? "DEV_ID"),
+    publicOrigin: JSON.stringify(publicOrigin),
+    gameServerOrigin: JSON.stringify(gameServerOrigin),
+    accountApiOrigin: JSON.stringify(accountApiOrigin),
+    cdnOrigin: JSON.stringify(cdnBase),
+    features: JSON.stringify(features),
     manifestHref: buildAssetUrl("manifest.json", assetManifest, cdnBase),
     legacyOpenFrontIntegrationsEnabled,
     faviconHref: buildAssetUrl(

@@ -80,24 +80,10 @@ export class CrazyGamesSDK {
   }
 
   isOnCrazyGames(): boolean {
-    try {
-      // Check if we're in an iframe
-      if (window.self !== window.top) {
-        // Try to access parent URL
-        return window?.top?.location?.hostname.includes("crazygames") ?? false;
-      }
-      return false;
-    } catch (e) {
-      // If we get a cross-origin error, we're definitely iframed
-      // Check our own referrer as fallback
-      const isCrazyGames = document.referrer.includes("crazygames");
-      if (isCrazyGames) {
-        return true;
-      }
-
-      // Fallback: on safari private we can't get referrer, so just assume we are in crazygames if in iframe
-      return window.self !== window.top;
-    }
+    // External platform adapters are intentionally disabled in the standard
+    // Iron Borders runtime profile. This avoids cross-origin iframe heuristics
+    // and SDK wait loops when no platform SDK is loaded.
+    return false;
   }
 
   isReady(): boolean {
@@ -105,6 +91,9 @@ export class CrazyGamesSDK {
   }
 
   async maybeInit(): Promise<void> {
+    this.resolveReady(false);
+    return;
+
     if (this.initialized) {
       console.warn("CrazyGames SDK already initialized");
       return;
@@ -129,8 +118,13 @@ export class CrazyGamesSDK {
       return;
     }
 
+    const sdk = window.CrazyGames;
+    if (!sdk) {
+      this.resolveReady(false);
+      return;
+    }
     try {
-      await window.CrazyGames.SDK.init();
+      await sdk!.SDK.init();
       this.initialized = true;
       this.resolveReady(true);
       console.log("CrazyGames SDK initialized");

@@ -83,12 +83,45 @@ export class ServerEnv {
   static cdnBase(): string {
     return process.env.CDN_BASE ?? "";
   }
+  static publicOrigin(): string {
+    return ServerEnv.validOrigin(
+      process.env.PUBLIC_ORIGIN ?? "http://localhost:9000",
+      "PUBLIC_ORIGIN",
+    );
+  }
+  static gameServerOrigin(): string {
+    return ServerEnv.validOrigin(
+      process.env.GAME_SERVER_ORIGIN ?? ServerEnv.publicOrigin(),
+      "GAME_SERVER_ORIGIN",
+    );
+  }
+  static accountApiOrigin(): string {
+    const legacyDefault =
+      ServerEnv.jwtAudience() === "localhost"
+        ? "http://localhost:8787"
+        : `https://api.${ServerEnv.jwtAudience()}`;
+    return ServerEnv.validOrigin(
+      process.env.ACCOUNT_API_ORIGIN ?? legacyDefault,
+      "ACCOUNT_API_ORIGIN",
+    );
+  }
+  static runtimeFeatures() {
+    const enabled = (name: string) => process.env[name] === "true";
+    return {
+      accounts: enabled("FEATURE_ACCOUNTS"),
+      clans: enabled("FEATURE_CLANS"),
+      store: enabled("FEATURE_STORE"),
+      subscriptions: enabled("FEATURE_SUBSCRIPTIONS"),
+      rewards: enabled("FEATURE_REWARDS"),
+      ranked: enabled("FEATURE_RANKED"),
+      telemetry: enabled("FEATURE_TELEMETRY"),
+      externalPlatforms: enabled("FEATURE_EXTERNAL_PLATFORMS"),
+      leaderboards: enabled("FEATURE_LEADERBOARDS"),
+      profiles: enabled("FEATURE_PROFILES"),
+    };
+  }
   static jwtIssuer(): string {
-    const audience = ServerEnv.jwtAudience();
-    ServerEnv.assertOwnerControlledAudience(audience);
-    return audience === "localhost"
-      ? "http://localhost:8787"
-      : `https://api.${audience}`;
+    return ServerEnv.accountApiOrigin();
   }
   static async jwkPublicKey(): Promise<JWK> {
     if (ServerEnv.publicKey) return ServerEnv.publicKey;
@@ -186,6 +219,19 @@ export class ServerEnv {
         "Refusing to connect to an OpenFront production audience. Configure DOMAIN for an operator-owned host.",
       );
     }
+  }
+  private static validOrigin(value: string, variable: string): string {
+    let parsed: URL;
+    try {
+      parsed = new URL(value);
+    } catch {
+      throw new Error(`${variable} must be an absolute http(s) URL`);
+    }
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error(`${variable} must use http or https`);
+    }
+    ServerEnv.assertOwnerControlledAudience(parsed.hostname);
+    return parsed.origin;
   }
   // Long-lived shared secret for the trusted admin bot HTTP API.
   // Undefined when unset, which disables the admin bot API entirely.

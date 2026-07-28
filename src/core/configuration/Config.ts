@@ -35,6 +35,11 @@ declare global {
       jwtAudience?: string;
       instanceId?: string;
       legacyOpenFrontIntegrationsEnabled?: boolean;
+      publicOrigin?: string;
+      gameServerOrigin?: string;
+      accountApiOrigin?: string;
+      cdnOrigin?: string;
+      features?: Record<string, boolean>;
       // Desktop-only: explicit game-server host for the WebSocket origin.
       // Absent on the web build (client falls back to same-origin location).
       serverHost?: string;

@@ -790,18 +790,11 @@ export async function createNextLobby(
 }
 
 export function getApiBase() {
-  const domainname = getAudience();
-
-  if (domainname === "localhost") {
-    const apiDomain = process.env.API_DOMAIN;
-    if (apiDomain) {
-      return `https://${apiDomain}`;
-    }
-    return "http://localhost:8787";
+  if (typeof ClientEnv.jwtIssuer === "function") {
+    return ClientEnv.jwtIssuer();
   }
-
-  assertOwnerControlledAudience(domainname);
-  return `https://api.${domainname}`;
+  const apiDomain = process.env.API_DOMAIN;
+  return apiDomain ? `https://${apiDomain}` : "http://localhost:8787";
 }
 
 function ownerControlledNavigationUrl(value: unknown): string | false {

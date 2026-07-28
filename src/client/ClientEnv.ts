@@ -42,6 +42,18 @@ export class ClientEnv {
       jwtAudience: bc.jwtAudience,
       instanceId: bc.instanceId,
       gitCommit: bc.gitCommit,
+      publicOrigin: requireOrigin(
+        bc.publicOrigin ?? window.location.origin,
+        "PUBLIC_ORIGIN",
+      ),
+      gameServerOrigin: requireOrigin(
+        bc.gameServerOrigin ?? window.location.origin,
+        "GAME_SERVER_ORIGIN",
+      ),
+      accountApiOrigin: requireOrigin(
+        bc.accountApiOrigin ?? legacyAccountApiOrigin(bc.jwtAudience),
+        "ACCOUNT_API_ORIGIN",
+      ),
       legacyOpenFrontIntegrationsEnabled:
         bc.legacyOpenFrontIntegrationsEnabled ?? false,
       // Optional: only the desktop app injects an explicit game-server host.
@@ -77,11 +89,7 @@ export class ClientEnv {
     return ClientEnv.get().legacyOpenFrontIntegrationsEnabled;
   }
   static jwtIssuer(): string {
-    const audience = ClientEnv.jwtAudience();
-    assertOwnerControlledAudience(audience);
-    return audience === "localhost"
-      ? "http://localhost:8787"
-      : `https://api.${audience}`;
+    return ClientEnv.get().accountApiOrigin;
   }
   static async jwkPublicKey(): Promise<JWK> {
     if (ClientEnv.publicKey) return ClientEnv.publicKey;
@@ -121,12 +129,37 @@ export class ClientEnv {
   // public-lobby and in-game WebSockets. The lobby-list and game sockets append
   // their own worker path (e.g. `/w0/lobbies`, `/w0`).
   static serverWsBase(): string {
-    return deriveServerWsBase(
-      ClientEnv.serverHost(),
-      window.location.protocol,
-      window.location.host,
-    );
+    return toWebSocketOrigin(ClientEnv.get().gameServerOrigin);
   }
+}
+
+function requireOrigin(value: unknown, variable: string): string {
+  if (typeof value !== "string") {
+    throw new Error(`Missing ${variable}`);
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${variable} must be an absolute http(s) URL`);
+  }
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error(`${variable} must use http or https`);
+  }
+  assertOwnerControlledAudience(parsed.hostname);
+  return parsed.origin;
+}
+
+function legacyAccountApiOrigin(audience: string): string {
+  return audience === "localhost"
+    ? "http://localhost:8787"
+    : `https://api.${audience}`;
+}
+
+function toWebSocketOrigin(origin: string): string {
+  const parsed = new URL(origin);
+  parsed.protocol = parsed.protocol === "https:" ? "wss:" : "ws:";
+  return parsed.origin;
 }
 
 function assertOwnerControlledAudience(audience: string): void {
@@ -184,5 +217,8 @@ export interface ClientEnvValues {
   instanceId: string;
   gitCommit: string;
   legacyOpenFrontIntegrationsEnabled: boolean;
+  publicOrigin: string;
+  gameServerOrigin: string;
+  accountApiOrigin: string;
   serverHost?: string;
 }

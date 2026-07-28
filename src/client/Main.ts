@@ -15,7 +15,7 @@ import { GameType } from "../core/game/Game";
 import { UserSettings } from "../core/game/UserSettings";
 import "./AccountModal";
 import { getUserMe, invalidateUserMe } from "./Api";
-import { reauthAfterCrazyGamesChange, userAuth } from "./Auth";
+import { userAuth } from "./Auth";
 import "./ClanModal";
 import { joinLobby, type JoinLobbyResult } from "./ClientGameRunner";
 import { getPlayerCosmeticsRefs } from "./Cosmetics";
@@ -49,6 +49,7 @@ import { initNavigation } from "./Navigation";
 import "./NewsModal";
 import "./PlayerProfileModal";
 import { RewardsModal } from "./RewardsModal";
+import { FEATURES } from "./RuntimeProfile";
 import "./SinglePlayerModal";
 import "./SteamLinkSignpost";
 import { StoreModal } from "./Store";
@@ -238,8 +239,6 @@ class Client {
   }> | null = null;
 
   async initialize(): Promise<void> {
-    crazyGamesSDK.maybeInit();
-
     // Register modals with the URL router. Lobby modals (join/host) and
     // matchmaking are intentionally omitted — they own their own URL state
     // (path-based) or none at all.
@@ -351,7 +350,6 @@ class Client {
       console.log("Browser is closing");
       if (this.lobbyHandle !== null) {
         this.lobbyHandle.stop(true);
-        await crazyGamesSDK.gameplayStop();
       }
     });
 
@@ -460,8 +458,8 @@ class Client {
     }
 
     const onUserMe = async (userMeResponse: UserMeResponse | false) => {
-      if (crazyGamesSDK.isOnCrazyGames()) {
-        void updateCrazyGamesNavButton();
+      if (!FEATURES.accounts) {
+        return;
       } else {
         updateAccountNavButton(userMeResponse);
       }
@@ -525,10 +523,10 @@ class Client {
       }
     };
 
-    if ((await userAuth()) === false) {
+    if (FEATURES.accounts && (await userAuth()) === false) {
       // Not logged in
       onUserMe(false);
-    } else {
+    } else if (FEATURES.accounts) {
       // JWT appears to be valid
       // TODO: Add caching
       getUserMe().then(onUserMe);
@@ -536,12 +534,6 @@ class Client {
 
     // Re-run auth when the player signs into CrazyGames mid-session. Logout
     // reloads the page, so only login needs handling here.
-    crazyGamesSDK.addAuthListener(() => {
-      invalidateUserMe();
-      reauthAfterCrazyGamesChange().then((result) =>
-        result === false ? onUserMe(false) : getUserMe().then(onUserMe),
-      );
-    });
 
     const settingsModal = document.querySelector(
       "user-setting",

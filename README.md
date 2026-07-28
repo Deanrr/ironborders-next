@@ -140,6 +140,19 @@ Before public hosting, replace the local privacy and terms placeholders and
 make the exact Corresponding Source archive for the deployed commit available
 from the local source page.
 
+## Runtime profile
+
+Iron Borders defaults to solo play, public/private multiplayer, settings, help,
+and local cosmetic selection. Accounts, clans, store, subscriptions, rewards,
+ranked play, telemetry, external platforms, leaderboards, and profiles are
+disabled by default through the `FEATURE_*` environment flags in
+[`example.env`](example.env). Do not enable a service until its server, policy,
+and operations are controlled by the Iron Borders operator.
+
+Deployment origins are explicit: `PUBLIC_ORIGIN`, `GAME_SERVER_ORIGIN`,
+`ACCOUNT_API_ORIGIN`, and `CDN_ORIGIN`/`CDN_BASE`. They must be absolute HTTP(S)
+origins; the inherited OpenFront domains are rejected.
+
 ## Licensing and source availability
 
 The inherited source is licensed under the

@@ -29,6 +29,11 @@ export async function renderHtmlContent(htmlPath: string): Promise<string> {
     turnstileSiteKey: JSON.stringify(ServerEnv.turnstileSiteKey()),
     jwtAudience: JSON.stringify(ServerEnv.jwtAudience()),
     instanceId: JSON.stringify(ServerEnv.instanceId()),
+    publicOrigin: JSON.stringify(ServerEnv.publicOrigin()),
+    gameServerOrigin: JSON.stringify(ServerEnv.gameServerOrigin()),
+    accountApiOrigin: JSON.stringify(ServerEnv.accountApiOrigin()),
+    cdnOrigin: JSON.stringify(ServerEnv.cdnBase()),
+    features: JSON.stringify(ServerEnv.runtimeFeatures()),
     legacyOpenFrontIntegrationsEnabled: false,
     manifestHref: buildAssetUrl("manifest.json", assetManifest, cdnBase),
     faviconHref: buildAssetUrl(
