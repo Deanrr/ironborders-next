@@ -38,6 +38,7 @@ import structureFragSrc from "../shaders/structure/structure.frag.glsl?raw";
 import structureVertSrc from "../shaders/structure/structure.vert.glsl?raw";
 
 const iconAtlasUrl = assetUrl("atlases/icon-atlas.png");
+const logisticsHubIconUrl = assetUrl("images/LogisticsHubIcon.svg");
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -54,9 +55,11 @@ const STRUCTURE_ORDER = [
   UT_DEFENSE_POST,
   UT_SAM_LAUNCHER,
   UT_MISSILE_SILO,
+  UT_LOGISTICS_HUB,
 ] as const;
 
 const ATLAS_COLS = STRUCTURE_ORDER.length;
+const ATLAS_TEXTURE_COLS = STRUCTURE_ORDER.length - 1;
 
 // ---------------------------------------------------------------------------
 // Instance data layout
@@ -97,6 +100,7 @@ export class StructurePass {
   private uIconAlpha: WebGLUniformLocation;
   private uIconColor: WebGLUniformLocation;
   private uIconDarken: WebGLUniformLocation;
+  private uHubIcon: WebGLUniformLocation;
   private uTime: WebGLUniformLocation;
   private uHoverOwner: WebGLUniformLocation;
   // Anchored at construction so the uniform stays small (float32 precision).
@@ -111,6 +115,7 @@ export class StructurePass {
   private paletteTex: WebGLTexture;
   private effectTex: WebGLTexture;
   private atlasTex: WebGLTexture;
+  private hubIconTex: WebGLTexture;
   private affiliationTex: WebGLTexture | null = null;
   private altView = false;
 
@@ -150,20 +155,20 @@ export class StructurePass {
         this.typeToAtlasCol.set(header.unitTypes[i], col);
       }
     }
-    // Logistics Hub uses the existing silo icon cell until the dedicated
-    // structure atlas artwork is added.
+    // Logistics Hub is an Iron Borders structure and is not part of the
+    // upstream renderer header's legacy unit list.
     this.typeToAtlasCol.set(
       UT_LOGISTICS_HUB,
-      STRUCTURE_ORDER.indexOf(UT_MISSILE_SILO),
+      STRUCTURE_ORDER.indexOf(UT_LOGISTICS_HUB),
     );
-
     // Compile shaders
     this.program = createProgram(
       gl,
-      shaderSrc(structureVertSrc, { ATLAS_COLS }),
+      shaderSrc(structureVertSrc, { ATLAS_COLS, ATLAS_TEXTURE_COLS }),
       shaderSrc(structureFragSrc, {
         PALETTE_SIZE: getPaletteSize(),
         ATLAS_COLS,
+        ATLAS_TEXTURE_COLS,
         // First row of the structures block in the shared effect palette.
         STRUCT_EFFECT_ROW_BASE: STRUCTURES_EFFECT_BLOCK * MAX_TRAIL_COLORS,
       }),
@@ -204,6 +209,7 @@ export class StructurePass {
     this.uIconAlpha = gl.getUniformLocation(this.program, "uIconAlpha")!;
     this.uIconColor = gl.getUniformLocation(this.program, "uIconColor")!;
     this.uIconDarken = gl.getUniformLocation(this.program, "uIconDarken")!;
+    this.uHubIcon = gl.getUniformLocation(this.program, "uHubIcon")!;
     this.uTime = gl.getUniformLocation(this.program, "uTime")!;
     this.uHoverOwner = gl.getUniformLocation(this.program, "uHoverOwner")!;
 
@@ -213,6 +219,7 @@ export class StructurePass {
     gl.uniform1i(gl.getUniformLocation(this.program, "uAtlas"), 1);
     gl.uniform1i(gl.getUniformLocation(this.program, "uAffiliation"), 2);
     gl.uniform1i(gl.getUniformLocation(this.program, "uEffect"), 3);
+    gl.uniform1i(this.uHubIcon, 4);
     gl.uniform1f(this.uGhostAlpha, 1.0);
     gl.uniform3f(this.uOutlineColor, 0, 0, 0);
     gl.uniform1i(this.uHighlightMask, 0);
@@ -238,8 +245,28 @@ export class StructurePass {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
+    this.hubIconTex = gl.createTexture()!;
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, this.hubIconTex);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      1,
+      1,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array([255, 255, 255, 255]),
+    );
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
     // Start async atlas build
     this.loadAtlas();
+    this.loadLogisticsHubIcon();
 
     // --- Instance buffers ---
     const instanceGlBuf = gl.createBuffer()!;
@@ -292,6 +319,23 @@ export class StructurePass {
     const gl = this.gl;
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, this.atlasTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(
+      gl.TEXTURE_2D,
+      gl.TEXTURE_MIN_FILTER,
+      gl.LINEAR_MIPMAP_LINEAR,
+    );
+  }
+
+  private async loadLogisticsHubIcon(): Promise<void> {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = logisticsHubIconUrl;
+    await img.decode();
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, this.hubIconTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(
@@ -431,6 +475,9 @@ export class StructurePass {
 
     gl.activeTexture(gl.TEXTURE3);
     gl.bindTexture(gl.TEXTURE_2D, this.effectTex);
+
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, this.hubIconTex);
 
     gl.bindVertexArray(this.vao);
 

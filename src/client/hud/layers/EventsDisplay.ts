@@ -413,7 +413,13 @@ export class EventsDisplay extends LitElement implements Controller {
       case "all":
         return true;
       case "player":
-        return event.playerSpecific === true;
+        return (
+          event.playerSpecific === true &&
+          (event.category === "threat" ||
+            event.category === "front" ||
+            (event.category === "conquest" &&
+              (event.tone === "warning" || event.tone === "critical")))
+        );
       case "war":
         return event.category === "front";
       case "nation":

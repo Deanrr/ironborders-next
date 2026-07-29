@@ -150,6 +150,10 @@
       "Missile Silo": {
         "scale": 1.55,
         "iconFill": 0.85
+      },
+      "Logistics Hub": {
+        "scale": 1.2,
+        "iconFill": 0.9
       }
     },
     "highlightOutlineWidth": 0.04,

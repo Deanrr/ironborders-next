@@ -37,6 +37,7 @@ const atomBombIcon = assetUrl("images/NukeIconWhite.svg");
 const portIcon = assetUrl("images/PortIcon.svg");
 const samlauncherIcon = assetUrl("images/SamLauncherIconWhite.svg");
 const shieldIcon = assetUrl("images/ShieldIconWhite.svg");
+const logisticsHubIcon = assetUrl("images/LogisticsHubIcon.svg");
 
 export interface BuildItemDisplay {
   unitType: PlayerBuildableUnitType;
@@ -71,7 +72,7 @@ export const buildTable: BuildItemDisplay[][] = [
     },
     {
       unitType: UnitType.CruiseMissile,
-      icon: missileSiloIcon,
+      icon: assetUrl("images/CruiseMissileIcon.svg"),
       description: "build_menu.desc.cruise_missile",
       key: "unit_type.cruise_missile",
       countable: false,
@@ -127,7 +128,7 @@ export const buildTable: BuildItemDisplay[][] = [
     },
     {
       unitType: UnitType.LogisticsHub,
-      icon: shieldIcon,
+      icon: logisticsHubIcon,
       description: "build_menu.desc.logistics_hub",
       key: "unit_type.logistics_hub",
       countable: true,

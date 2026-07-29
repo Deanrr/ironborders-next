@@ -52,6 +52,7 @@ const STRUCTURE_ORDER = [
   UT_DEFENSE_POST,
   UT_SAM_LAUNCHER,
   UT_MISSILE_SILO,
+  UT_LOGISTICS_HUB,
 ] as const;
 
 /** Max characters per level label (handles up to "99"). */
@@ -172,9 +173,8 @@ export class StructureLevelPass {
     }
     this.typeToAtlasCol.set(
       UT_LOGISTICS_HUB,
-      STRUCTURE_ORDER.indexOf(UT_MISSILE_SILO),
+      STRUCTURE_ORDER.indexOf(UT_LOGISTICS_HUB),
     );
-
     this.kernTable = new Int8Array(CHAR_RANGE * CHAR_RANGE); // digits don't kern
 
     // Classic bitmap font (round_6x6_modified) — digits only.

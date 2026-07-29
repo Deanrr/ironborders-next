@@ -209,7 +209,7 @@ export class UnitDisplay extends LitElement implements Controller {
             null,
             UnitType.CruiseMissile,
             "cruise_missile",
-            this.keybinds["buildCruiseMissile"]?.key ?? "",
+            this.keybinds["buildCruiseMissile"]?.key ?? "-",
           )}
         </div>
       </div>
@@ -231,6 +231,7 @@ export class UnitDisplay extends LitElement implements Controller {
     const displayHotkey = hotkey
       .replace("Digit", "")
       .replace("Key", "")
+      .replace("Minus", "-")
       .toUpperCase();
 
     return html`

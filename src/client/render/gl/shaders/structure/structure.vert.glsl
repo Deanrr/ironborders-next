@@ -67,6 +67,8 @@ void main() {
   float uvExpand = shapeScale / uIconFills[shapeIdx];
   float scaledX = 0.5 + (aPos.x - 0.5) * uvExpand;
   float scaledY = 0.5 + (aPos.y - 0.5) * uvExpand;
-  float colU = (aInst1.x + scaledX) / float(ATLAS_COLS);
+  // Logistics Hub (the final structure column) uses its own texture instead
+  // of the legacy six-column atlas. Keep legacy atlas UVs on six columns.
+  float colU = (aInst1.x + scaledX) / float(ATLAS_TEXTURE_COLS);
   vAtlasUV = vec2(colU, scaledY);
 }
