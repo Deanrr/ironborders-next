@@ -64,6 +64,12 @@ export class SupplyConvoyExecution implements Execution {
       this.convoy = this.origOwner.buildUnit(UnitType.SupplyConvoy, spawn, {
         targetUnit: this.dstPort,
       });
+      this.mg.displayIncomingUnit(
+        this.convoy.id(),
+        `${this.origOwner.displayName()} - supply convoy underway`,
+        MessageType.NAVAL_CONVOY_INBOUND,
+        this.origOwner.id(),
+      );
       this.recordMotionPlan(ticks, this.convoy.tile(), this.dstPort.tile());
       return;
     }
@@ -82,7 +88,10 @@ export class SupplyConvoyExecution implements Execution {
         MessageType.CAPTURED_ENEMY_UNIT,
         convoyOwner.id(),
         CONVOY_CAPTURE_REWARD,
-        { gold: renderNumber(CONVOY_CAPTURE_REWARD), name: this.origOwner.displayName() },
+        {
+          gold: renderNumber(CONVOY_CAPTURE_REWARD),
+          name: this.origOwner.displayName(),
+        },
         this.convoy.id(),
       );
       this.recordLoss();
@@ -100,7 +109,10 @@ export class SupplyConvoyExecution implements Execution {
 
     if (ticks - this.lastMove < 1) return;
     this.lastMove = ticks;
-    const result = this.pathFinder.next(this.convoy.tile(), this.dstPort.tile());
+    const result = this.pathFinder.next(
+      this.convoy.tile(),
+      this.dstPort.tile(),
+    );
     switch (result.status) {
       case PathStatus.COMPLETE:
         this.mg.recordSupplyConvoyArrival(this.origOwner);

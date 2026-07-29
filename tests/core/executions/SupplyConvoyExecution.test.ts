@@ -33,7 +33,10 @@ describe("SupplyConvoyExecution", () => {
     for (let y = 0; y < game.height() && dstTile === false; y++) {
       for (let x = 0; x < game.width() && dstTile === false; x++) {
         const candidate = game.ref(x, y);
-        if (!game.isLand(candidate) || game.manhattanDist(candidate, srcTile) < 5) {
+        if (
+          !game.isLand(candidate) ||
+          game.manhattanDist(candidate, srcTile) < 5
+        ) {
           continue;
         }
         player.conquer(candidate);
@@ -45,9 +48,16 @@ describe("SupplyConvoyExecution", () => {
     const dstPort = player.buildUnit(UnitType.Port, dstTile, {});
 
     const arrival = vi.spyOn(game, "recordSupplyConvoyArrival");
+    const inbound = vi.spyOn(game, "displayIncomingUnit");
     game.addExecution(new SupplyConvoyExecution(player, srcPort, dstPort));
     executeTicks(game, 250);
 
+    expect(inbound).toHaveBeenCalledWith(
+      expect.any(Number),
+      "player - supply convoy underway",
+      expect.anything(),
+      player.id(),
+    );
     expect(arrival).toHaveBeenCalledWith(player);
     expect(game.units(UnitType.SupplyConvoy)).toHaveLength(0);
   });

@@ -35,6 +35,15 @@ describe("CruiseMissileExecution", () => {
     attacker.buildUnit(UnitType.MissileSilo, source, {});
     const city = defender.buildUnit(UnitType.City, target, {});
 
+    const emptyTarget = game.ref(12, 12);
+    expect(
+      attacker.buildableUnits(emptyTarget, [UnitType.CruiseMissile])[0]
+        .canBuild,
+    ).toBe(false);
+    expect(
+      attacker.buildableUnits(target, [UnitType.CruiseMissile])[0].canBuild,
+    ).toBe(source);
+
     game.addExecution(new CruiseMissileExecution(attacker, target));
     executeTicks(game, 20);
 

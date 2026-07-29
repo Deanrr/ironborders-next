@@ -17,6 +17,7 @@ import { GameView } from "../../view";
 import {
   atomBombIcon,
   cityIcon,
+  cruiseMissileIcon,
   defensePostIcon,
   factoryIcon,
   goldCoinIcon,
@@ -77,6 +78,7 @@ export class UnitDisplay extends LitElement implements Controller {
       case UnitType.AtomBomb:
       case UnitType.HydrogenBomb:
       case UnitType.MIRV:
+      case UnitType.CruiseMissile:
         return (
           this.cost(item) <= (player?.gold() ?? 0n) &&
           (player?.units(UnitType.MissileSilo).length ?? 0) > 0
@@ -201,6 +203,13 @@ export class UnitDisplay extends LitElement implements Controller {
             UnitType.MIRV,
             "mirv",
             this.keybinds["buildMIRV"]?.key ?? "0",
+          )}
+          ${this.renderUnitItem(
+            cruiseMissileIcon,
+            null,
+            UnitType.CruiseMissile,
+            "cruise_missile",
+            this.keybinds["buildCruiseMissile"]?.key ?? "",
           )}
         </div>
       </div>

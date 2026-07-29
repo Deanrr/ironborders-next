@@ -163,7 +163,12 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
       this.setVisible(true);
     } else if (!this.game.isLand(tile)) {
       const units = this.game
-        .units(UnitType.Warship, UnitType.TradeShip, UnitType.TransportShip)
+        .units(
+          UnitType.Warship,
+          UnitType.TradeShip,
+          UnitType.SupplyConvoy,
+          UnitType.TransportShip,
+        )
         .filter((u) => euclideanDistWorld(worldCoord, u.tile(), this.game) < 50)
         .sort(distSortUnitWorld(worldCoord, this.game));
 
@@ -383,7 +388,11 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
           <div class="flex gap-0.5 lg:gap-1 items-center mt-0.5">
             ${this.displayUnitCount(player, UnitType.City, cityIcon)}
             ${this.displayUnitCount(player, UnitType.Factory, factoryIcon)}
-            ${this.displayUnitCount(player, UnitType.LogisticsHub, logisticsHubIcon)}
+            ${this.displayUnitCount(
+              player,
+              UnitType.LogisticsHub,
+              logisticsHubIcon,
+            )}
             ${this.displayUnitCount(player, UnitType.Port, portIcon)}
             ${this.displayUnitCount(
               player,
@@ -464,7 +473,15 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
           counts.islands++;
         return counts;
       },
-      { cities: 0, ports: 0, industrial: 0, logistics: 0, chokepoints: 0, crossings: 0, islands: 0 },
+      {
+        cities: 0,
+        ports: 0,
+        industrial: 0,
+        logistics: 0,
+        chokepoints: 0,
+        crossings: 0,
+        islands: 0,
+      },
     );
     return html`
       <div
@@ -473,7 +490,9 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
         <span>Authority: ${authorityLabels[state.authorityState]}</span>
         <span
           >Doctrine:
-          ${state.doctrine ? nationDoctrineLabel(state.doctrine) : "Unassigned"}</span
+          ${state.doctrine
+            ? nationDoctrineLabel(state.doctrine)
+            : "Unassigned"}</span
         >
         <span>Capital: ${capitalStatus}</span>
         <span>Territory: ${Math.round(state.territoryFraction * 100)}%</span>
@@ -482,11 +501,17 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
         <span>Supply: ${state.supply ?? "-"}%</span>
         <span>Overextension: ${state.overextension ?? "-"}%</span>
         <span>Exhaustion: ${state.warExhaustion ?? "-"}%</span>
-        <span>Output: ${state.productionModifier === undefined ? "-" : Math.round(state.productionModifier * 100)}%</span>
+        <span
+          >Output:
+          ${state.productionModifier === undefined
+            ? "-"
+            : Math.round(state.productionModifier * 100)}%</span
+        >
         <span title=${relationNames(allies)}>Allies: ${allies.length}</span>
         <span title=${relationNames(enemies)}>Enemies: ${enemies.length}</span>
         <span
-          >Recent: ${state.territoryDelta >= 0 ? "+" : ""}${state.territoryDelta}
+          >Recent:
+          ${state.territoryDelta >= 0 ? "+" : ""}${state.territoryDelta}
           tiles</span
         >
         <span>Fronts: ${activeFronts}</span>
@@ -497,11 +522,14 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
         </span>
         ${faction
           ? html`<span
-              >Objective: ${faction.objective.replace(/_/g, " ")}${
-                faction.objectiveLocationType
-                  ? ` · ${faction.objectiveLocationType.replace(/_/g, " ")}`
-                  : ""
-              }${faction.objectiveSecured ? " ✓" : ""} · ${Math.round(faction.victoryProgress * 100)}%</span
+              >Objective:
+              ${faction.objective.replace(
+                /_/g,
+                " ",
+              )}${faction.objectiveLocationType
+                ? ` · ${faction.objectiveLocationType.replace(/_/g, " ")}`
+                : ""}${faction.objectiveSecured ? " ✓" : ""}
+              · ${Math.round(faction.victoryProgress * 100)}%</span
             >`
           : html``}
       </div>

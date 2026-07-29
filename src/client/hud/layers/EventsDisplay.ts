@@ -3,9 +3,10 @@ import { customElement, query, state } from "lit/decorators.js";
 import { DirectiveResult } from "lit/directive.js";
 import { unsafeHTML, UnsafeHTMLDirective } from "lit/directives/unsafe-html.js";
 import { EventBus } from "../../../core/EventBus";
-import { FrontEventType, FrontMomentum } from "../../../core/game/FrontFraming";
 import { FactionEventType } from "../../../core/game/FactionFraming";
+import { FrontEventType, FrontMomentum } from "../../../core/game/FrontFraming";
 import { AllPlayers, MessageType } from "../../../core/game/Game";
+import { TileRef } from "../../../core/game/GameMap";
 import {
   AllianceExpiredUpdate,
   AllianceRequestReplyUpdate,
@@ -14,16 +15,17 @@ import {
   DisplayMessageUpdate,
   DonateEventUpdate,
   EmojiUpdate,
-  FrontEventUpdate,
   FactionEventUpdate,
+  FrontEventUpdate,
   GameUpdateType,
   NationalEventUpdate,
   TargetPlayerUpdate,
   UnitIncomingUpdate,
 } from "../../../core/game/GameUpdates";
-import { NationalEventType } from "../../../core/game/NationalFraming";
-import { StrategicLocationType } from "../../../core/game/NationalFraming";
-import { TileRef } from "../../../core/game/GameMap";
+import {
+  NationalEventType,
+  StrategicLocationType,
+} from "../../../core/game/NationalFraming";
 import { UserSettings } from "../../../core/game/UserSettings";
 import { Controller } from "../../Controller";
 import { SendAllianceRequestIntentEvent } from "../../Transport";
@@ -90,8 +92,7 @@ const EVENT_CATEGORY_ICONS: Record<EventCategory, string> = {
 };
 
 const EVENT_TONE_CLASSES: Record<EventTone, string> = {
-  positive:
-    "border-emerald-400 bg-emerald-500/10 text-emerald-100",
+  positive: "border-emerald-400 bg-emerald-500/10 text-emerald-100",
   neutral: "border-slate-500 bg-slate-500/10 text-slate-100",
   warning: "border-amber-400 bg-amber-500/10 text-amber-100",
   critical: "border-red-500 bg-red-500/15 text-red-100",
@@ -113,6 +114,7 @@ const TIER_1_TYPES: ReadonlySet<MessageType> = new Set([
   MessageType.NUKE_DETONATED,
   MessageType.CRUISE_MISSILE_DETONATED,
   MessageType.NAVAL_INVASION_INBOUND,
+  MessageType.NAVAL_CONVOY_INBOUND,
   MessageType.ATTACK_REQUEST,
   MessageType.ALLIANCE_ACCEPTED,
   MessageType.ALLIANCE_REJECTED,
@@ -152,6 +154,7 @@ const ACTIONABLE_FRONT_MOMENTA: ReadonlySet<FrontMomentum> = new Set([
 
 const INCOMING_THREAT_TYPES: ReadonlySet<MessageType> = new Set([
   MessageType.NAVAL_INVASION_INBOUND,
+  MessageType.NAVAL_CONVOY_INBOUND,
   MessageType.MIRV_INBOUND,
   MessageType.NUKE_INBOUND,
   MessageType.HYDROGEN_BOMB_INBOUND,
@@ -169,6 +172,7 @@ export class EventsDisplay extends LitElement implements Controller {
   private userSettings = new UserSettings();
 
   @state() private _isVisible: boolean = false;
+  @state() private _isExpanded: boolean = true;
   @state() private _eventFilter: EventFilter = "all";
 
   @query(".events-container")
@@ -319,7 +323,9 @@ export class EventsDisplay extends LitElement implements Controller {
         event.type === MessageType.NUKE_INBOUND ||
         event.type === MessageType.HYDROGEN_BOMB_INBOUND ||
         event.type === MessageType.MIRV_INBOUND ||
-        event.type === MessageType.NAVAL_INVASION_INBOUND;
+        event.type === MessageType.NAVAL_INVASION_INBOUND ||
+        event.type === MessageType.CRUISE_MISSILE_INBOUND ||
+        event.type === MessageType.NAVAL_CONVOY_INBOUND;
       const unitGone =
         isInboundWarning &&
         event.unitView !== undefined &&
@@ -377,7 +383,10 @@ export class EventsDisplay extends LitElement implements Controller {
     if (INCOMING_THREAT_TYPES.has(type)) return "critical";
     if (type === MessageType.CRUISE_MISSILE_DETONATED) return "critical";
     if (type === MessageType.ALLIANCE_ACCEPTED) return "positive";
-    if (type === MessageType.ALLIANCE_REJECTED || type === MessageType.ALLIANCE_BROKEN) {
+    if (
+      type === MessageType.ALLIANCE_REJECTED ||
+      type === MessageType.ALLIANCE_BROKEN
+    ) {
       return "warning";
     }
     return "neutral";
@@ -411,7 +420,10 @@ export class EventsDisplay extends LitElement implements Controller {
       anchors.push(...nationalState.locations.map((location) => location.tile));
     }
     const nameLocation = myPlayer.nameLocation();
-    if (nameLocation && this.game.isValidCoord(nameLocation.x, nameLocation.y)) {
+    if (
+      nameLocation &&
+      this.game.isValidCoord(nameLocation.x, nameLocation.y)
+    ) {
       anchors.push(this.game.ref(nameLocation.x, nameLocation.y));
     }
     anchors.push(...myPlayer.units().map((unit) => unit.tile()));
@@ -419,7 +431,10 @@ export class EventsDisplay extends LitElement implements Controller {
 
     const radius = Math.max(
       24,
-      Math.min(80, Math.round(Math.sqrt(Math.max(1, myPlayer.numTilesOwned())) * 2)),
+      Math.min(
+        80,
+        Math.round(Math.sqrt(Math.max(1, myPlayer.numTilesOwned())) * 2),
+      ),
     );
     const targetX = this.game.x(tile);
     const targetY = this.game.y(tile);
@@ -434,12 +449,15 @@ export class EventsDisplay extends LitElement implements Controller {
   private isFrontRelevant(update: FrontEventUpdate): boolean {
     const myPlayer = this.game.myPlayer();
     if (!myPlayer) return false;
-    if (update.attackerID === myPlayer.id() || update.defenderID === myPlayer.id()) {
+    if (
+      update.attackerID === myPlayer.id() ||
+      update.defenderID === myPlayer.id()
+    ) {
       return true;
     }
-    const front = this.game.frontStates().find(
-      (candidate) => candidate.frontID === update.frontID,
-    );
+    const front = this.game
+      .frontStates()
+      .find((candidate) => candidate.frontID === update.frontID);
     return (
       (front?.positions ?? []).some((tile) => this.isTileNearMyNation(tile)) ||
       this.isTileNearMyNation(update.tile)
@@ -514,7 +532,7 @@ export class EventsDisplay extends LitElement implements Controller {
               ? "captured"
               : "secured"
         }`
-            : descriptions[update.event];
+      : descriptions[update.event];
     let relatedName: string | undefined;
     if (
       update.relatedNationID !== undefined &&
@@ -945,11 +963,14 @@ export class EventsDisplay extends LitElement implements Controller {
       event.messageType === MessageType.NAVAL_INVASION_INBOUND ||
       event.messageType === MessageType.NAVAL_CONVOY_INBOUND;
     const isCruise = event.messageType === MessageType.CRUISE_MISSILE_INBOUND;
-    const prefix = isNaval
-      ? "Naval fleet inbound"
-      : isCruise
-        ? "Cruise missile inbound"
-        : "Missile inbound";
+    const prefix =
+      event.messageType === MessageType.NAVAL_CONVOY_INBOUND
+        ? "Supply convoy inbound"
+        : isNaval
+          ? "Naval fleet inbound"
+          : isCruise
+            ? "Cruise missile inbound"
+            : "Missile inbound";
 
     this.addEvent({
       description: `${prefix} — ${event.message}`,
@@ -999,22 +1020,28 @@ export class EventsDisplay extends LitElement implements Controller {
     return html`
       <tr>
         <td
-          class="lg:px-2 lg:py-1 p-1 text-left border-l-4 ${EVENT_TONE_CLASSES[tone]} ${getMessageTypeClasses(event.type)}"
+          class="lg:px-2 lg:py-1 p-1 text-left border-l-4 ${EVENT_TONE_CLASSES[
+            tone
+          ]} ${getMessageTypeClasses(event.type)}"
         >
           <div class="flex items-start gap-2">
             <span
               class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-[10px] font-bold"
               aria-hidden="true"
-            >${EVENT_CATEGORY_ICONS[category]}</span>
+              >${EVENT_CATEGORY_ICONS[category]}</span
+            >
             <div class="min-w-0">
-              <div class="text-[9px] font-semibold tracking-[0.14em] opacity-70">
+              <div
+                class="text-[9px] font-semibold tracking-[0.14em] opacity-70"
+              >
                 ${EVENT_CATEGORY_LABELS[category]}
               </div>
               ${event.focusID
                 ? this.renderButton({
                     content: this.getEventDescription(event),
                     onClick: () => {
-                      if (event.focusID) this.emitGoToPlayerEvent(event.focusID);
+                      if (event.focusID)
+                        this.emitGoToPlayerEvent(event.focusID);
                     },
                     className: "text-left",
                   })
@@ -1022,7 +1049,8 @@ export class EventsDisplay extends LitElement implements Controller {
                   ? this.renderButton({
                       content: this.getEventDescription(event),
                       onClick: () => {
-                        if (event.unitView) this.emitGoToUnitEvent(event.unitView);
+                        if (event.unitView)
+                          this.emitGoToUnitEvent(event.unitView);
                       },
                       className: "text-left",
                     })
@@ -1056,33 +1084,58 @@ export class EventsDisplay extends LitElement implements Controller {
     tier2Events.sort((a, b) => a.createdAt - b.createdAt);
     tier2Events = tier2Events.slice(-4);
 
-    if (
-      tier1Events.length === 0 &&
-      tier2Events.length === 0 &&
-      !showBetrayalTimer
-    ) {
-      return html``;
-    }
+    const visibleEventCount = tier1Events.length + tier2Events.length;
 
     return html`
       <div class="flex flex-col gap-1 w-full min-[1200px]:w-96">
-        <div class="flex items-center gap-1 rounded-md bg-gray-900/85 p-1 text-[10px] uppercase tracking-wide pointer-events-auto">
-          ${(["all", "war", "nation", "diplomacy", "threats"] as EventFilter[]).map(
-            (filter) =>
-              html`<button
-                class="rounded px-2 py-1 transition-colors ${
-                  this._eventFilter === filter
-                    ? "bg-white/15 text-white"
-                    : "text-slate-400 hover:bg-white/10 hover:text-slate-200"
-                }"
-                @click=${() => {
-                  this._eventFilter = filter;
-                }}
-                aria-pressed=${this._eventFilter === filter}
-              >${EVENT_FILTER_LABELS[filter]}</button>`,
-          )}
+        <div
+          class="flex items-center justify-between gap-2 rounded-md bg-gray-900/90 p-1 text-[10px] uppercase tracking-wide pointer-events-auto"
+        >
+          <span class="px-2 text-slate-300"
+            >EVENT LOG (${visibleEventCount})</span
+          >
+          <button
+            class="rounded px-2 py-1 text-slate-300 hover:bg-white/10 hover:text-white"
+            @click=${() => {
+              this._isExpanded = !this._isExpanded;
+            }}
+            aria-expanded=${this._isExpanded}
+          >
+            ${this._isExpanded ? "Hide" : "Show"}
+          </button>
         </div>
-        ${tier2Events.length > 0
+        ${this._isExpanded
+          ? html`
+              <div
+                class="flex items-center gap-1 rounded-md bg-gray-900/85 p-1 text-[10px] uppercase tracking-wide pointer-events-auto"
+              >
+                ${(
+                  [
+                    "all",
+                    "war",
+                    "nation",
+                    "diplomacy",
+                    "threats",
+                  ] as EventFilter[]
+                ).map(
+                  (filter) =>
+                    html`<button
+                      class="rounded px-2 py-1 transition-colors ${this
+                        ._eventFilter === filter
+                        ? "bg-white/15 text-white"
+                        : "text-slate-400 hover:bg-white/10 hover:text-slate-200"}"
+                      @click=${() => {
+                        this._eventFilter = filter;
+                      }}
+                      aria-pressed=${this._eventFilter === filter}
+                    >
+                      ${EVENT_FILTER_LABELS[filter]}
+                    </button>`,
+                )}
+              </div>
+            `
+          : ""}
+        ${this._isExpanded && tier2Events.length > 0
           ? html`
               <div
                 class="bg-gray-800/92 backdrop-blur-sm max-h-[12vh] lg:max-h-[22vh] overflow-y-auto rounded-lg opacity-90 events-container"
@@ -1097,7 +1150,7 @@ export class EventsDisplay extends LitElement implements Controller {
               </div>
             `
           : ""}
-        ${tier1Events.length > 0 || showBetrayalTimer
+        ${this._isExpanded && (tier1Events.length > 0 || showBetrayalTimer)
           ? html`
               <div
                 class="bg-gray-800 backdrop-blur-sm max-h-[30vh] lg:max-h-[40vh] overflow-y-auto rounded-lg shadow-lg border-l-4 border-red-500 important-events-container"
@@ -1120,6 +1173,13 @@ export class EventsDisplay extends LitElement implements Controller {
                 </table>
               </div>
             `
+          : ""}
+        ${this._isExpanded && visibleEventCount === 0 && !showBetrayalTimer
+          ? html`<div
+              class="rounded-md bg-gray-900/80 px-3 py-2 text-xs text-slate-400 pointer-events-auto"
+            >
+              No recent events
+            </div>`
           : ""}
       </div>
     `;

@@ -1480,6 +1480,15 @@ export class PlayerImpl implements Player {
     if (this.mg.isSpawnImmunityActive() || this.mg.isImpassable(tile)) {
       return false;
     }
+    // Cruise missiles are precision structure strikes. Do not advertise a
+    // valid launch against an empty tile: the client can then keep the target
+    // cursor honest and the server will not accept a no-op purchase.
+    const target = this.mg
+      .units(Structures.types)
+      .find((unit) => unit.isActive() && unit.tile() === tile);
+    if (target === undefined || target.owner() === this) {
+      return false;
+    }
     const owner = this.mg.owner(tile);
     if (owner.isPlayer() && (owner === this || this.isOnSameTeam(owner))) {
       return false;
@@ -1488,9 +1497,7 @@ export class PlayerImpl implements Player {
       this.units(UnitType.MissileSilo),
       (silo) => this.mg.manhattanDist(silo.tile(), tile),
       (silo) =>
-        silo.isActive() &&
-        !silo.isInCooldown() &&
-        !silo.isUnderConstruction(),
+        silo.isActive() && !silo.isInCooldown() && !silo.isUnderConstruction(),
     );
     return bestSilo?.tile() ?? false;
   }
