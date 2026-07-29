@@ -1007,6 +1007,7 @@ export class EventsDisplay extends LitElement implements Controller {
       event.messageType === MessageType.NAVAL_INVASION_INBOUND ||
       event.messageType === MessageType.NAVAL_CONVOY_INBOUND;
     const isCruise = event.messageType === MessageType.CRUISE_MISSILE_INBOUND;
+    const isMirv = event.messageType === MessageType.MIRV_INBOUND;
     const prefix =
       event.messageType === MessageType.NAVAL_CONVOY_INBOUND
         ? "Supply convoy inbound"
@@ -1014,7 +1015,9 @@ export class EventsDisplay extends LitElement implements Controller {
           ? "Naval fleet inbound"
           : isCruise
             ? "Cruise missile inbound"
-            : "Missile inbound";
+            : isMirv
+              ? "MIRV inbound"
+              : "Missile inbound";
 
     this.addEvent({
       description: `${prefix} — ${event.message}`,

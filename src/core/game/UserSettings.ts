@@ -28,7 +28,7 @@ export function getDefaultKeybinds(isMac: boolean): Record<string, string> {
     buildAtomBomb: "Digit8",
     buildHydrogenBomb: "Digit9",
     buildMIRV: "Digit0",
-    buildCruiseMissile: "Minus",
+    buildCruiseMissile: "KeyV",
     attackRatioDown: "KeyT",
     attackRatioUp: "KeyY",
     boatAttack: "KeyB",
@@ -533,6 +533,11 @@ export class UserSettings {
       ...getDefaultKeybinds(isMac),
       ...this.normalizedUserKeybinds(),
     };
+    // Minus is reserved by the map zoom handler. Migrate the temporary
+    // Cruise Missile default introduced before that conflict was noticed.
+    if (merged.buildCruiseMissile === "Minus") {
+      merged.buildCruiseMissile = "KeyV";
+    }
     // Actually unbind key: if Unbind is clicked in UserSettingsModal, eg. for Attack Ratio Up,
     // keybind is "Null". Even if it is in default kindbinds (Y), it should not work anymore.
     // The key (Y) can now be bound to another action like Boat Attack, and no two actions listen to the same key.

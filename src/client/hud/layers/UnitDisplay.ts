@@ -209,7 +209,7 @@ export class UnitDisplay extends LitElement implements Controller {
             null,
             UnitType.CruiseMissile,
             "cruise_missile",
-            this.keybinds["buildCruiseMissile"]?.key ?? "-",
+            this.keybinds["buildCruiseMissile"]?.key ?? "V",
           )}
         </div>
       </div>
