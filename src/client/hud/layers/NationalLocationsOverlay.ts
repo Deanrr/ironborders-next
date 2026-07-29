@@ -155,6 +155,11 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
         color: "#c4b5fd",
         name: "industrial region",
       },
+      [StrategicLocationType.LogisticsHub]: {
+        label: "H",
+        color: "#34d399",
+        name: "logistics hub",
+      },
       [StrategicLocationType.Chokepoint]: {
         label: "K",
         color: "#fb923c",

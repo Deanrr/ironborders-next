@@ -45,12 +45,65 @@ interface GameEvent {
   description: string;
   unsafeDescription?: boolean;
   type: MessageType;
+  category?: EventCategory;
+  tone?: EventTone;
   highlight?: boolean;
   createdAt: number;
   onDelete?: () => void;
   focusID?: number;
   unitView?: UnitView;
 }
+
+export type EventCategory =
+  | "threat"
+  | "front"
+  | "conquest"
+  | "diplomacy"
+  | "logistics"
+  | "economy"
+  | "faction"
+  | "progression";
+
+export type EventTone = "positive" | "neutral" | "warning" | "critical";
+type EventFilter = "all" | "war" | "nation" | "diplomacy" | "threats";
+
+const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
+  threat: "THREAT",
+  front: "FRONT",
+  conquest: "NATION",
+  diplomacy: "DIPLOMACY",
+  logistics: "LOGISTICS",
+  economy: "ECONOMY",
+  faction: "FACTION",
+  progression: "PROGRESS",
+};
+
+const EVENT_CATEGORY_ICONS: Record<EventCategory, string> = {
+  threat: "!",
+  front: "→",
+  conquest: "◆",
+  diplomacy: "⚑",
+  logistics: "◇",
+  economy: "¤",
+  faction: "✦",
+  progression: "★",
+};
+
+const EVENT_TONE_CLASSES: Record<EventTone, string> = {
+  positive:
+    "border-emerald-400 bg-emerald-500/10 text-emerald-100",
+  neutral: "border-slate-500 bg-slate-500/10 text-slate-100",
+  warning: "border-amber-400 bg-amber-500/10 text-amber-100",
+  critical: "border-red-500 bg-red-500/15 text-red-100",
+};
+
+const EVENT_FILTER_LABELS: Record<EventFilter, string> = {
+  all: "All",
+  war: "War",
+  nation: "Nation",
+  diplomacy: "Diplomacy",
+  threats: "Threats",
+};
 
 const TIER_1_TYPES: ReadonlySet<MessageType> = new Set([
   MessageType.NUKE_INBOUND,
@@ -113,6 +166,7 @@ export class EventsDisplay extends LitElement implements Controller {
   private userSettings = new UserSettings();
 
   @state() private _isVisible: boolean = false;
+  @state() private _eventFilter: EventFilter = "all";
 
   @query(".events-container")
   private _eventsContainer?: HTMLDivElement;
@@ -287,8 +341,56 @@ export class EventsDisplay extends LitElement implements Controller {
   }
 
   private addEvent(event: GameEvent) {
-    this.events = [...this.events, event];
+    const category = event.category ?? this.categoryForMessageType(event.type);
+    const tone = event.tone ?? this.toneForMessageType(event.type);
+    this.events = [...this.events, { ...event, category, tone }];
     this.requestUpdate();
+  }
+
+  private categoryForMessageType(type: MessageType): EventCategory {
+    if (INCOMING_THREAT_TYPES.has(type)) return "threat";
+    if (
+      type === MessageType.ATTACK_REQUEST ||
+      type === MessageType.NUKE_DETONATED
+    ) {
+      return "front";
+    }
+    if (
+      type === MessageType.ALLIANCE_ACCEPTED ||
+      type === MessageType.ALLIANCE_REJECTED ||
+      type === MessageType.ALLIANCE_BROKEN ||
+      type === MessageType.RENEW_ALLIANCE ||
+      type === MessageType.ALLIANCE_REQUEST
+    ) {
+      return "diplomacy";
+    }
+    if (type === MessageType.DONATION_RECEIVED) return "economy";
+    if (type === MessageType.CONQUERED_PLAYER) return "conquest";
+    return "logistics";
+  }
+
+  private toneForMessageType(type: MessageType): EventTone {
+    if (INCOMING_THREAT_TYPES.has(type)) return "critical";
+    if (type === MessageType.ALLIANCE_ACCEPTED) return "positive";
+    if (type === MessageType.ALLIANCE_REJECTED || type === MessageType.ALLIANCE_BROKEN) {
+      return "warning";
+    }
+    return "neutral";
+  }
+
+  private eventMatchesFilter(event: GameEvent): boolean {
+    switch (this._eventFilter) {
+      case "all":
+        return true;
+      case "war":
+        return event.category === "front";
+      case "nation":
+        return event.category === "conquest";
+      case "diplomacy":
+        return event.category === "diplomacy" || event.category === "faction";
+      case "threats":
+        return event.category === "threat";
+    }
   }
 
   /** Keep national-war notices local to the player's current theater. */
@@ -391,6 +493,7 @@ export class EventsDisplay extends LitElement implements Controller {
       [StrategicLocationType.MajorCity]: "major city",
       [StrategicLocationType.Port]: "port",
       [StrategicLocationType.IndustrialRegion]: "industrial region",
+      [StrategicLocationType.LogisticsHub]: "logistics hub",
       [StrategicLocationType.Chokepoint]: "chokepoint",
       [StrategicLocationType.Crossing]: "crossing",
       [StrategicLocationType.StrategicIsland]: "strategic island",
@@ -426,8 +529,38 @@ export class EventsDisplay extends LitElement implements Controller {
       createdAt: this.game.ticks(),
       highlight: true,
       type: MessageType.CONQUERED_PLAYER,
+      category: "conquest",
+      tone: this.nationalEventTone(update.event),
       focusID: nation.smallID(),
     });
+  }
+
+  private nationalEventTone(event: NationalEventType): EventTone {
+    if (
+      event === NationalEventType.CapitalThreatened ||
+      event === NationalEventType.CapitalEncircled ||
+      event === NationalEventType.StrategicLocationThreatened ||
+      event === NationalEventType.LiberationAttempted
+    ) {
+      return "warning";
+    }
+    if (
+      event === NationalEventType.CapitalCaptured ||
+      event === NationalEventType.NationOccupied ||
+      event === NationalEventType.NationEliminated ||
+      event === NationalEventType.GovernmentDisplaced
+    ) {
+      return "critical";
+    }
+    if (
+      event === NationalEventType.CapitalSecured ||
+      event === NationalEventType.NationLiberated ||
+      event === NationalEventType.StrategicLocationSecured ||
+      event === NationalEventType.MajorRegionSecured
+    ) {
+      return "positive";
+    }
+    return "neutral";
   }
 
   private onFrontEvent(update: FrontEventUpdate) {
@@ -462,6 +595,16 @@ export class EventsDisplay extends LitElement implements Controller {
       createdAt: this.game.ticks(),
       highlight: update.event !== FrontEventType.Ended,
       type: MessageType.ATTACK_REQUEST,
+      category: "front",
+      tone:
+        update.momentum === FrontMomentum.Collapsing ||
+        update.momentum === FrontMomentum.Overextended
+          ? "warning"
+          : update.momentum === FrontMomentum.Advancing ||
+              update.momentum === FrontMomentum.Breakthrough ||
+              update.momentum === FrontMomentum.Reinforced
+            ? "positive"
+            : "neutral",
       focusID,
     });
   }
@@ -491,6 +634,8 @@ export class EventsDisplay extends LitElement implements Controller {
       createdAt: this.game.ticks(),
       highlight: true,
       type: MessageType.CONQUERED_PLAYER,
+      category: "faction",
+      tone: "positive",
     });
   }
 
@@ -837,30 +982,41 @@ export class EventsDisplay extends LitElement implements Controller {
   }
 
   private renderEventRow(event: GameEvent) {
+    const category = event.category ?? "logistics";
+    const tone = event.tone ?? "neutral";
     return html`
       <tr>
         <td
-          class="lg:px-2 lg:py-1 p-1 text-left ${getMessageTypeClasses(
-            event.type,
-          )}"
+          class="lg:px-2 lg:py-1 p-1 text-left border-l-4 ${EVENT_TONE_CLASSES[tone]} ${getMessageTypeClasses(event.type)}"
         >
-          ${event.focusID
-            ? this.renderButton({
-                content: this.getEventDescription(event),
-                onClick: () => {
-                  if (event.focusID) this.emitGoToPlayerEvent(event.focusID);
-                },
-                className: "text-left",
-              })
-            : event.unitView
-              ? this.renderButton({
-                  content: this.getEventDescription(event),
-                  onClick: () => {
-                    if (event.unitView) this.emitGoToUnitEvent(event.unitView);
-                  },
-                  className: "text-left",
-                })
-              : this.getEventDescription(event)}
+          <div class="flex items-start gap-2">
+            <span
+              class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-[10px] font-bold"
+              aria-hidden="true"
+            >${EVENT_CATEGORY_ICONS[category]}</span>
+            <div class="min-w-0">
+              <div class="text-[9px] font-semibold tracking-[0.14em] opacity-70">
+                ${EVENT_CATEGORY_LABELS[category]}
+              </div>
+              ${event.focusID
+                ? this.renderButton({
+                    content: this.getEventDescription(event),
+                    onClick: () => {
+                      if (event.focusID) this.emitGoToPlayerEvent(event.focusID);
+                    },
+                    className: "text-left",
+                  })
+                : event.unitView
+                  ? this.renderButton({
+                      content: this.getEventDescription(event),
+                      onClick: () => {
+                        if (event.unitView) this.emitGoToUnitEvent(event.unitView);
+                      },
+                      className: "text-left",
+                    })
+                  : this.getEventDescription(event)}
+            </div>
+          </div>
         </td>
       </tr>
     `;
@@ -881,6 +1037,7 @@ export class EventsDisplay extends LitElement implements Controller {
     const tier1Events: GameEvent[] = [];
     let tier2Events: GameEvent[] = [];
     for (const event of this.events) {
+      if (!this.eventMatchesFilter(event)) continue;
       (isTier1(event.type) ? tier1Events : tier2Events).push(event);
     }
     tier1Events.sort((a, b) => a.createdAt - b.createdAt);
@@ -897,6 +1054,22 @@ export class EventsDisplay extends LitElement implements Controller {
 
     return html`
       <div class="flex flex-col gap-1 w-full min-[1200px]:w-96">
+        <div class="flex items-center gap-1 rounded-md bg-gray-900/85 p-1 text-[10px] uppercase tracking-wide pointer-events-auto">
+          ${(["all", "war", "nation", "diplomacy", "threats"] as EventFilter[]).map(
+            (filter) =>
+              html`<button
+                class="rounded px-2 py-1 transition-colors ${
+                  this._eventFilter === filter
+                    ? "bg-white/15 text-white"
+                    : "text-slate-400 hover:bg-white/10 hover:text-slate-200"
+                }"
+                @click=${() => {
+                  this._eventFilter = filter;
+                }}
+                aria-pressed=${this._eventFilter === filter}
+              >${EVENT_FILTER_LABELS[filter]}</button>`,
+          )}
+        </div>
         ${tier2Events.length > 0
           ? html`
               <div

@@ -45,6 +45,7 @@ import { GameMap, TileRef } from "./GameMap";
 import { GameUpdate, GameUpdateType } from "./GameUpdates";
 import { MotionPlanRecord, packMotionPlans } from "./MotionPlans";
 import { NationalFramingTracker } from "./NationalFraming";
+import { MatchChronicle } from "./MatchChronicle";
 import { PlayerImpl } from "./PlayerImpl";
 import { RailNetwork } from "./RailNetwork";
 import { createRailNetwork } from "./RailNetworkImpl";
@@ -122,6 +123,7 @@ export class GameImpl implements Game {
   private nationalFraming: NationalFramingTracker;
   private frontFraming: FrontFramingTracker;
   private factionFraming: FactionFramingTracker;
+  private matchChronicle = new MatchChronicle();
 
   constructor(
     private _humans: PlayerInfo[],
@@ -511,12 +513,14 @@ export class GameImpl implements Game {
     if (this.ticks() % 10 === 0) {
       const nationalFraming = this.nationalFraming.evaluate();
       for (const state of nationalFraming.states) {
+        this.matchChronicle.recordNationalState(state);
         this.addUpdate({
           type: GameUpdateType.NationalState,
           ...state,
         });
       }
       for (const event of nationalFraming.events) {
+        this.matchChronicle.recordNationalEvent(event);
         this.addUpdate({
           type: GameUpdateType.NationalEvent,
           ...event,
@@ -531,6 +535,7 @@ export class GameImpl implements Game {
         });
       }
       for (const event of this.frontFraming.drainEvents()) {
+        this.matchChronicle.recordFrontEvent(event);
         this.addUpdate({
           type: GameUpdateType.FrontEvent,
           ...event,
@@ -788,6 +793,12 @@ export class GameImpl implements Game {
       throw Error(`cannot conquer impassable terrain`);
     }
     const previousOwner = this.owner(tile) as TerraNullius | PlayerImpl;
+    if (this.startTick !== null) {
+      this.matchChronicle.recordTerritoryChange(
+        previousOwner.isPlayer() ? previousOwner : null,
+        owner,
+      );
+    }
     if (previousOwner.isPlayer()) {
       previousOwner._lastTileChange = this._ticks;
       previousOwner._tiles.delete(tile);
@@ -955,6 +966,12 @@ export class GameImpl implements Game {
       type: GameUpdateType.Win,
       winner: winner === null ? undefined : this.makeWinner(winner),
       allPlayersStats,
+      campaignDebriefs: this.matchChronicle.buildDebriefs(
+        this.allPlayers().filter((player) => player.clientID() !== null),
+        allPlayersStats,
+        this.startTick === null ? this._ticks : this._ticks - this.startTick,
+        winner !== null && typeof winner !== "string" ? winner.id() : null,
+      ),
     });
   }
 

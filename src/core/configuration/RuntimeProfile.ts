@@ -1,5 +1,6 @@
 export const RUNTIME_FEATURE_NAMES = [
   "accounts",
+  "progression",
   "clans",
   "store",
   "subscriptions",
@@ -17,6 +18,7 @@ export type RuntimeFeatures = Record<RuntimeFeatureName, boolean>;
 export const DEFAULT_RUNTIME_FEATURES: Readonly<RuntimeFeatures> =
   Object.freeze({
     accounts: false,
+    progression: false,
     clans: false,
     store: false,
     subscriptions: false,
@@ -42,10 +44,12 @@ const FEATURE_DEPENDENCIES: Readonly<
   clans: ["accounts"],
   ranked: ["accounts"],
   profiles: ["accounts"],
+  progression: ["accounts"],
 };
 
 const FEATURE_ENV_NAMES: Readonly<Record<RuntimeFeatureName, string>> = {
   accounts: "FEATURE_ACCOUNTS",
+  progression: "FEATURE_PROGRESSION",
   clans: "FEATURE_CLANS",
   store: "FEATURE_STORE",
   subscriptions: "FEATURE_SUBSCRIPTIONS",

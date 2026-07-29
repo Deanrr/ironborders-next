@@ -118,6 +118,13 @@ export const buildTable: BuildItemDisplay[][] = [
       key: "unit_type.factory",
       countable: true,
     },
+    {
+      unitType: UnitType.LogisticsHub,
+      icon: shieldIcon,
+      description: "build_menu.desc.logistics_hub",
+      key: "unit_type.logistics_hub",
+      countable: true,
+    },
   ],
 ];
 

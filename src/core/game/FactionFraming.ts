@@ -103,6 +103,7 @@ function objectiveTargetFor(
   const consolidatedLocation = () => {
     const priorities: Array<[UnitType, StrategicLocationType]> = [
       [UnitType.Factory, StrategicLocationType.IndustrialRegion],
+      [UnitType.LogisticsHub, StrategicLocationType.LogisticsHub],
       [UnitType.City, StrategicLocationType.MajorCity],
       [UnitType.Port, StrategicLocationType.Port],
     ];

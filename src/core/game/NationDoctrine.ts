@@ -34,6 +34,7 @@ export function structurePriorityForDoctrine(
     case NationDoctrine.Economic:
       return [
         UnitType.Factory,
+        UnitType.LogisticsHub,
         UnitType.Port,
         UnitType.SAMLauncher,
         UnitType.MissileSilo,
@@ -41,6 +42,7 @@ export function structurePriorityForDoctrine(
     case NationDoctrine.Fortress:
       return [
         UnitType.SAMLauncher,
+        UnitType.LogisticsHub,
         UnitType.Factory,
         UnitType.Port,
         UnitType.MissileSilo,
@@ -49,6 +51,7 @@ export function structurePriorityForDoctrine(
     default:
       return [
         UnitType.Port,
+        UnitType.LogisticsHub,
         UnitType.Factory,
         UnitType.SAMLauncher,
         UnitType.MissileSilo,

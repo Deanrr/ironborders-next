@@ -252,6 +252,7 @@ export class PlayerExecution implements Execution {
       committedTroops,
       troopCapacity: this.config.maxTroops(this.player),
       overextension,
+      logisticsHubs: this.player.unitCount(UnitType.LogisticsHub),
     });
     this.nationalWarExhaustion = advanceWarExhaustion(
       this.nationalWarExhaustion,

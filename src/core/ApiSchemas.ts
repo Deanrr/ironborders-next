@@ -241,6 +241,20 @@ export const UserMeResponseSchema = z.object({
   }),
 });
 export type UserMeResponse = z.infer<typeof UserMeResponseSchema>;
+
+export const ProgressionSchema = z.object({
+  level: z.number().int().min(1),
+  currentXp: z.number().int().min(0),
+  nextLevelXp: z.number().int().positive(),
+  title: z.string(),
+  lifetimeMatches: z.number().int().min(0),
+  lifetimeWins: z.number().int().min(0),
+  frontsWon: z.number().int().min(0),
+  capitalsCaptured: z.number().int().min(0),
+  nationsLiberated: z.number().int().min(0),
+  strategicLocationsSecured: z.number().int().min(0),
+});
+export type Progression = z.infer<typeof ProgressionSchema>;
 export type UserSubscription = NonNullable<
   NonNullable<UserMeResponse["player"]["subscription"]>
 >;

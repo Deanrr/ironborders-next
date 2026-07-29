@@ -47,6 +47,7 @@ const allianceIcon = assetUrl("images/AllianceIcon.svg");
 const warshipIcon = assetUrl("images/BattleshipIconWhite.svg");
 const cityIcon = assetUrl("images/CityIconWhite.svg");
 const factoryIcon = assetUrl("images/FactoryIconWhite.svg");
+const logisticsHubIcon = assetUrl("images/ShieldIconWhite.svg");
 const goldCoinIcon = assetUrl("images/GoldCoinIcon.svg");
 const missileSiloIcon = assetUrl("images/MissileSiloIconWhite.svg");
 const portIcon = assetUrl("images/PortIcon.svg");
@@ -382,6 +383,7 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
           <div class="flex gap-0.5 lg:gap-1 items-center mt-0.5">
             ${this.displayUnitCount(player, UnitType.City, cityIcon)}
             ${this.displayUnitCount(player, UnitType.Factory, factoryIcon)}
+            ${this.displayUnitCount(player, UnitType.LogisticsHub, logisticsHubIcon)}
             ${this.displayUnitCount(player, UnitType.Port, portIcon)}
             ${this.displayUnitCount(
               player,
@@ -451,6 +453,8 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
         if (location.type === StrategicLocationType.Port) counts.ports++;
         if (location.type === StrategicLocationType.IndustrialRegion)
           counts.industrial++;
+        if (location.type === StrategicLocationType.LogisticsHub)
+          counts.logistics++;
         if (location.type === StrategicLocationType.MajorCity) counts.cities++;
         if (location.type === StrategicLocationType.Chokepoint)
           counts.chokepoints++;
@@ -460,7 +464,7 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
           counts.islands++;
         return counts;
       },
-      { cities: 0, ports: 0, industrial: 0, chokepoints: 0, crossings: 0, islands: 0 },
+      { cities: 0, ports: 0, industrial: 0, logistics: 0, chokepoints: 0, crossings: 0, islands: 0 },
     );
     return html`
       <div
@@ -488,7 +492,7 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
         <span>Fronts: ${activeFronts}</span>
         <span>
           Locations:
-          ${locationCounts.cities}C/${locationCounts.ports}P/${locationCounts.industrial}I
+          ${locationCounts.cities}C/${locationCounts.ports}P/${locationCounts.industrial}I/${locationCounts.logistics}H
           ${locationCounts.chokepoints}K/${locationCounts.crossings}X/${locationCounts.islands}S
         </span>
         ${faction

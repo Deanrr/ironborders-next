@@ -25,6 +25,7 @@ import type {
 import type { NationDoctrine } from "./NationDoctrine";
 import type { FactionObjective } from "./FactionFraming";
 import type { FactionEventType } from "./FactionFraming";
+import type { CampaignDebrief } from "./MatchChronicle";
 
 export interface GameUpdateViewData {
   tick: number;
@@ -419,6 +420,7 @@ export interface WinUpdate {
   type: GameUpdateType.Win;
   allPlayersStats: AllPlayersStats;
   winner: Winner;
+  campaignDebriefs?: Record<PlayerID, CampaignDebrief>;
 }
 
 export interface HashUpdate {

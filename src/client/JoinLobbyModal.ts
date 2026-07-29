@@ -754,6 +754,7 @@ export class JoinLobbyModal extends BaseModal {
       "Missile Silo": "unit_type.missile_silo",
       Warship: "unit_type.warship",
       Factory: "unit_type.factory",
+      "Logistics Hub": "unit_type.logistics_hub",
       "Atom Bomb": "unit_type.atom_bomb",
       "Hydrogen Bomb": "unit_type.hydrogen_bomb",
       MIRV: "unit_type.mirv",

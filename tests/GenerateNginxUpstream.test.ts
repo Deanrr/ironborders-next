@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SCRIPT = path.resolve(__dirname, "../generate-nginx-upstream.sh");
+const SCRIPT = path.resolve(__dirname, "../generate-nginx-upstream.mjs");
 
 // Run the script with the given NUM_WORKERS (undefined = unset) and return the
 // generated config text.
@@ -20,7 +20,7 @@ function generate(numWorkers?: string): string {
     env.NUM_WORKERS = numWorkers;
   }
   try {
-    execFileSync("sh", [SCRIPT, out], { env });
+    execFileSync(process.execPath, [SCRIPT, out], { env });
     return fs.readFileSync(out, "utf8");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

@@ -56,6 +56,10 @@ function getStructureRatios(
       ratioPerCity: 0.75,
       perceivedCostIncreasePerOwned: 1,
     },
+    [UnitType.LogisticsHub]: {
+      ratioPerCity: 0.15,
+      perceivedCostIncreasePerOwned: 0.5,
+    },
     [UnitType.SAMLauncher]: {
       ratioPerCity: SAM_RATIO_BY_DIFFICULTY[difficulty],
       perceivedCostIncreasePerOwned: 0.3,
@@ -898,6 +902,8 @@ export class NationStructureBehavior {
         return this.missileSiloValue();
       case UnitType.Factory:
         return this.factoryValue();
+      case UnitType.LogisticsHub:
+        return this.logisticsHubValue();
       case UnitType.Port:
         return this.portValue();
       case UnitType.SAMLauncher:
@@ -1030,6 +1036,32 @@ export class NationStructureBehavior {
         ) * structureSpacing;
 
       return w;
+    };
+  }
+
+  /** Logistics hubs prefer a defensible position near an active national front. */
+  private logisticsHubValue(): (tile: TileRef) => number {
+    const game = this.game;
+    const borderTiles = this.player.borderTiles();
+    const existing = this.player.units(UnitType.LogisticsHub);
+    const { borderSpacing, structureSpacing } = this.spacingConstants();
+
+    return (tile) => {
+      let value = game.magnitude(tile);
+      const [, borderDistance] = closestTile(game, borderTiles, tile);
+      value += Math.min(borderDistance, borderSpacing);
+      const nearestHub = closestTwoTiles(
+        game,
+        new Set(existing.map((unit) => unit.tile())),
+        [tile],
+      );
+      if (nearestHub !== null) {
+        value += Math.min(
+          game.manhattanDist(nearestHub.x, tile),
+          structureSpacing * 2,
+        );
+      }
+      return value;
     };
   }
 
@@ -1268,6 +1300,7 @@ export class NationStructureBehavior {
       switch (unit.type()) {
         case UnitType.City:
         case UnitType.Factory:
+        case UnitType.LogisticsHub:
         case UnitType.MissileSilo:
         case UnitType.Port:
           protectEntries.push({

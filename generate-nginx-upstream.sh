@@ -15,25 +15,5 @@
 # Usage: generate-nginx-upstream.sh [output_path]
 set -eu
 
-OUT="${1:-/etc/nginx/conf.d/00-workers.conf}"
-n="${NUM_WORKERS:-1}"
-
-{
-    echo 'upstream openfront_workers {'
-    echo '    random;'
-    i=0
-    while [ "$i" -lt "$n" ]; do
-        echo "    server 127.0.0.1:$((3001 + i));"
-        i=$((i + 1))
-    done
-    echo '}'
-    echo ''
-    echo 'map $worker $worker_port {'
-    echo '    default 3001;'
-    i=0
-    while [ "$i" -lt "$n" ]; do
-        echo "    $i $((3001 + i));"
-        i=$((i + 1))
-    done
-    echo '}'
-} > "$OUT"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec node "$SCRIPT_DIR/generate-nginx-upstream.mjs" "$@"

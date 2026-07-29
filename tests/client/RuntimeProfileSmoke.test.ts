@@ -11,6 +11,7 @@ import {
 function importerSpies(): OptionalFeatureImporters {
   return {
     accounts: vi.fn(async () => {}),
+    progression: vi.fn(async () => {}),
     clans: vi.fn(async () => {}),
     store: vi.fn(async () => {}),
     leaderboards: vi.fn(async () => {}),

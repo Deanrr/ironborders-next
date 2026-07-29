@@ -21,6 +21,7 @@ import {
   factoryIcon,
   goldCoinIcon,
   hydrogenBombIcon,
+  logisticsHubIcon,
   mirvIcon,
   missileSiloIcon,
   portIcon,
@@ -42,6 +43,7 @@ export class UnitDisplay extends LitElement implements Controller {
   private _port = 0;
   private _defensePost = 0;
   private _samLauncher = 0;
+  private _logisticsHubs = 0;
   private allDisabled = false;
   private _hoveredUnit: PlayerBuildableUnitType | null = null;
 
@@ -101,6 +103,7 @@ export class UnitDisplay extends LitElement implements Controller {
     this._defensePost = player.totalUnitLevels(UnitType.DefensePost);
     this._samLauncher = player.totalUnitLevels(UnitType.SAMLauncher);
     this._factories = player.totalUnitLevels(UnitType.Factory);
+    this._logisticsHubs = player.totalUnitLevels(UnitType.LogisticsHub);
     this._warships = player.totalUnitLevels(UnitType.Warship);
     this.requestUpdate();
   }
@@ -170,6 +173,13 @@ export class UnitDisplay extends LitElement implements Controller {
             UnitType.Warship,
             "warship",
             this.keybinds["buildWarship"]?.key ?? "7",
+          )}
+          ${this.renderUnitItem(
+            logisticsHubIcon,
+            this._logisticsHubs,
+            UnitType.LogisticsHub,
+            "logistics_hub",
+            this.keybinds["buildLogisticsHub"]?.key ?? "H",
           )}
           ${this.renderUnitItem(
             atomBombIcon,

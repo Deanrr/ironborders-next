@@ -4,6 +4,7 @@ import { translateText } from "../../../client/Utils";
 import { EventBus } from "../../../core/EventBus";
 import { RankedType } from "../../../core/game/Game";
 import { GameUpdateType } from "../../../core/game/GameUpdates";
+import type { CampaignDebrief } from "../../../core/game/MatchChronicle";
 import { getUserMe } from "../../Api";
 import "../../components/CosmeticButton";
 import { Controller } from "../../Controller";
@@ -37,6 +38,9 @@ export class WinModal extends LitElement implements Controller {
 
   @state()
   private patternContent: TemplateResult | null = null;
+
+  @state()
+  private campaignDebrief: CampaignDebrief | null = null;
 
   private _title: string;
 
@@ -102,7 +106,36 @@ export class WinModal extends LitElement implements Controller {
   }
 
   innerHtml() {
-    return this.renderPatternButton();
+    return html`${this.campaignDebrief ? this.renderCampaignDebrief() : ""}
+      ${this.renderPatternButton()}`;
+  }
+
+  private renderCampaignDebrief() {
+    const d = this.campaignDebrief!;
+    return html`
+      <div class="mb-6 rounded-xl border border-indigo-300/25 bg-indigo-500/10 p-4 text-white">
+        <div class="text-xs uppercase tracking-[0.2em] text-indigo-200/70">Campaign Debrief</div>
+        <div class="mt-1 text-xl font-semibold">${d.victory ? "Victory" : "Campaign complete"} — ${d.placement}${d.placement === 1 ? "st" : d.placement === 2 ? "nd" : d.placement === 3 ? "rd" : "th"} place</div>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+          ${this.debriefStat("Fronts won", d.frontsWon)}
+          ${this.debriefStat("Capitals captured", d.capitalsCaptured)}
+          ${this.debriefStat("Locations secured", d.strategicLocationsSecured)}
+          ${this.debriefStat("Nations liberated", d.nationsLiberated)}
+          ${this.debriefStat("Nations eliminated", d.nationsEliminated)}
+          ${this.debriefStat("Territory gained", d.territoryGained)}
+          ${this.debriefStat("Lowest supply", `${Math.round(d.lowestSupply * 100)}%`)}
+          ${this.debriefStat("Peak overextension", `${Math.round(d.peakOverextension * 100)}%`)}
+          ${this.debriefStat("Experience", `${d.experienceEarned} XP`)}
+        </div>
+      </div>
+    `;
+  }
+
+  private debriefStat(label: string, value: number | string) {
+    return html`<div class="rounded-lg bg-black/20 p-2">
+      <div class="text-xs text-white/50">${label}</div>
+      <div class="font-semibold">${value}</div>
+    </div>`;
   }
 
   renderPatternButton() {
@@ -209,6 +242,10 @@ export class WinModal extends LitElement implements Controller {
     const updates = this.game.updatesSinceLastTick();
     const winUpdates = updates !== null ? updates[GameUpdateType.Win] : [];
     winUpdates.forEach((wu) => {
+      this.campaignDebrief =
+        this.game.myPlayer()?.id() !== undefined
+          ? (wu.campaignDebriefs?.[this.game.myPlayer()!.id()] ?? null)
+          : null;
       if (wu.winner === undefined) {
         // Match cancelled (e.g. a ranked 2v2 that didn't fill or fully
         // spawn): the game ends with no winner. Still vote the result to the

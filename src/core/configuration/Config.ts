@@ -470,6 +470,16 @@ export class Config {
           upgradable: true,
         };
         break;
+      case UnitType.LogisticsHub:
+        info = {
+          cost: this.costWrapper(
+            (numUnits: number) => Math.min(1_500_000, (numUnits + 1) * 350_000),
+            UnitType.LogisticsHub,
+          ),
+          constructionDuration: this.instantBuild() ? 0 : 4 * 10,
+          upgradable: true,
+        };
+        break;
       case UnitType.Train:
         info = {
           cost: () => 0n,

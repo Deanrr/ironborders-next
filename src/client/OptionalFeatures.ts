@@ -3,6 +3,7 @@ import { FEATURES } from "./RuntimeProfile";
 
 export interface OptionalFeatureImporters {
   accounts: () => Promise<unknown>;
+  progression: () => Promise<unknown>;
   clans: () => Promise<unknown>;
   store: () => Promise<unknown>;
   leaderboards: () => Promise<unknown>;
@@ -21,6 +22,7 @@ const importers: OptionalFeatureImporters = {
       import("./GoogleAdElement"),
       import("./components/MarketingConsentToast"),
     ]),
+  progression: () => import("./ProgressionModal"),
   clans: () => import("./ClanModal"),
   store: () => import("./Store"),
   leaderboards: () => import("./LeaderboardModal"),
@@ -45,6 +47,7 @@ export async function loadOptionalFeatures(
 ): Promise<void> {
   const imports: Array<Promise<unknown>> = [];
   if (features.accounts) imports.push(featureImporters.accounts());
+  if (features.progression) imports.push(featureImporters.progression());
   if (features.clans) imports.push(featureImporters.clans());
   if (features.store) imports.push(featureImporters.store());
   if (features.leaderboards) imports.push(featureImporters.leaderboards());

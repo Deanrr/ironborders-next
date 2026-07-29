@@ -30,6 +30,7 @@ export enum StrategicLocationType {
   MajorCity = "major_city",
   Port = "port",
   IndustrialRegion = "industrial_region",
+  LogisticsHub = "logistics_hub",
   Chokepoint = "chokepoint",
   Crossing = "crossing",
   StrategicIsland = "strategic_island",
@@ -120,6 +121,7 @@ export interface SupplyInput {
   committedTroops: number;
   troopCapacity: number;
   overextension?: number;
+  logisticsHubs?: number;
 }
 
 /** Derive a readable supply signal from live fronts and national pressure. */
@@ -132,6 +134,7 @@ export function deriveSupply(input: SupplyInput): number {
   pressure += Math.min(20, input.activeOutgoingAttacks * 4);
   pressure += commitment * 25;
   pressure += Math.min(20, Math.max(0, input.overextension ?? 0) * 0.2);
+  pressure -= Math.min(18, Math.max(0, input.logisticsHubs ?? 0) * 5);
   if (input.capitalThreatened) pressure += 12;
   if (input.capitalEncircled) pressure += 18;
   return Math.round(Math.max(0, Math.min(100, 100 - pressure)));
@@ -400,6 +403,12 @@ export function deriveStrategicLocations(
     ...player.units(UnitType.Factory).map((unit) => ({
       id: `${player.id()}:factory:${unit.id()}`,
       type: StrategicLocationType.IndustrialRegion,
+      ownerID: player.id(),
+      tile: unit.tile(),
+    })),
+    ...player.units(UnitType.LogisticsHub).map((unit) => ({
+      id: `${player.id()}:logistics_hub:${unit.id()}`,
+      type: StrategicLocationType.LogisticsHub,
       ownerID: player.id(),
       tile: unit.tile(),
     })),
@@ -898,6 +907,7 @@ export class NationalFramingTracker {
         committedTroops,
         troopCapacity: this.game.config().maxTroops(player),
         overextension: summary.overextension,
+        logisticsHubs: player.unitCount(UnitType.LogisticsHub),
       });
       const capitalIsOwned = summary.capital.ownerID === summary.nationID;
       const resistanceTarget = deriveOccupationResistance({

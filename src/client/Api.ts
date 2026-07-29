@@ -19,6 +19,8 @@ import {
   PostTribeNameResponseSchema,
   PublicPlayerGamesResponse,
   PublicPlayerGamesResponseSchema,
+  Progression,
+  ProgressionSchema,
   PutUsernameResponse,
   PutUsernameResponseSchema,
   RankedLeaderboardResponse,
@@ -199,6 +201,22 @@ export async function getUserMe(): Promise<UserMeResponse | false> {
 
 export function invalidateUserMe() {
   __userMe = null;
+}
+
+export async function fetchProgression(): Promise<Progression | false> {
+  try {
+    const auth = await getAuthHeader();
+    if (!auth) return false;
+    const response = await fetch(`${getApiBase()}/progression/@me`, {
+      headers: { Authorization: auth, Accept: "application/json" },
+    });
+    if (!response.ok) return false;
+    const result = ProgressionSchema.safeParse(await response.json());
+    return result.success ? result.data : false;
+  } catch (error) {
+    console.warn("fetchProgression: request failed", error);
+    return false;
+  }
 }
 
 // POST /marketing/consent — record the player's marketing-email choice

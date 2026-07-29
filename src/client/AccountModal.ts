@@ -29,6 +29,7 @@ import "./components/UsernamePanel";
 import { fetchCosmetics } from "./Cosmetics";
 import { crazyGamesSDK, type CrazyGamesUser } from "./CrazyGamesSDK";
 import { playerProfileUrl } from "./PlayerProfileModal";
+import { FEATURES } from "./RuntimeProfile";
 import { translateText } from "./Utils";
 
 @customElement("account-modal")
@@ -136,6 +137,9 @@ export class AccountModal extends BaseModal {
     return {
       tabs: [
         { key: "account", label: translateText("account_modal.tab_account") },
+        ...(FEATURES.progression
+          ? [{ key: "progression", label: "Progression" }]
+          : []),
         { key: "stats", label: translateText("account_modal.tab_stats") },
         { key: "games", label: translateText("account_modal.tab_games") },
         { key: "friends", label: translateText("account_modal.tab_friends") },
@@ -168,6 +172,8 @@ export class AccountModal extends BaseModal {
     switch (tab) {
       case "stats":
         return this.renderStatsTab();
+      case "progression":
+        return html`<progression-modal></progression-modal>`;
       case "games":
         return this.renderGamesTab();
       case "friends":
