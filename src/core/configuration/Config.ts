@@ -208,7 +208,9 @@ export class Config {
   }
 
   cruiseMissileSpeed(): number {
-    return 12;
+    // Cruise missiles are fast, but leave enough flight time for SAMs to
+    // compute an interception and reach the trajectory.
+    return 8;
   }
 
   defensePostRange(): number {

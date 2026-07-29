@@ -19,6 +19,7 @@ export class CruiseMissileExecution implements Execution {
   private mg: Game;
   private missile: Unit | null = null;
   private target: Unit | null = null;
+  private targetTile: TileRef | null = null;
   private src: TileRef | null = null;
   private speed = -1;
   private pathFinder: ParabolaUniversalPathFinder;
@@ -38,14 +39,21 @@ export class CruiseMissileExecution implements Execution {
 
   tick(ticks: number): void {
     if (this.missile === null) {
-      this.target = this.mg
-        .units(Structures.types)
-        .find(
-          (unit) =>
-            unit.isActive() &&
-            unit.tile() === this.dst &&
-            unit.owner() !== this.player,
-        ) ?? null;
+      this.target =
+        this.mg
+          .nearbyUnits(
+            this.dst,
+            2.5,
+            Structures.types,
+            ({ unit }) =>
+              unit.isActive() &&
+              unit.owner() !== this.player &&
+              !(
+                unit.owner().isPlayer() &&
+                this.player.isOnSameTeam(unit.owner() as Player)
+              ),
+          )
+          .sort((a, b) => a.distSquared - b.distSquared)[0]?.unit ?? null;
       const spawn = this.player.canBuild(UnitType.CruiseMissile, this.dst);
       if (spawn === false || this.target === null) {
         this.active = false;
@@ -53,14 +61,15 @@ export class CruiseMissileExecution implements Execution {
       }
 
       this.src = spawn;
-      const path = this.pathFinder.findPath(this.src, this.dst) ?? [];
+      this.targetTile = this.target.tile();
+      const path = this.pathFinder.findPath(this.src, this.targetTile) ?? [];
       if (path.some((tile) => this.mg.isImpassable(tile))) {
         this.active = false;
         return;
       }
 
       this.missile = this.player.buildUnit(UnitType.CruiseMissile, this.src, {
-        targetTile: this.dst,
+        targetTile: this.targetTile!,
         trajectory: this.getTrajectory(),
       });
       this.mg.recordMotionPlan({
@@ -84,7 +93,11 @@ export class CruiseMissileExecution implements Execution {
       return;
     }
 
-    if (!this.missile.isActive() || this.target === null || !this.target.isActive()) {
+    if (
+      !this.missile.isActive() ||
+      this.target === null ||
+      !this.target.isActive()
+    ) {
       this.active = false;
       return;
     }
@@ -94,31 +107,29 @@ export class CruiseMissileExecution implements Execution {
       return;
     }
 
-    const result = this.pathFinder.next(this.src!, this.dst, this.speed);
+    const result = this.pathFinder.next(
+      this.src!,
+      this.targetTile!,
+      this.speed,
+    );
     if (result.status === PathStatus.COMPLETE) {
       this.detonate();
     } else if (result.status === PathStatus.NEXT) {
       this.missile.setTrajectoryIndex(this.pathFinder.currentIndex());
-      this.missile.setTargetable(this.isTargetable(this.missile.tile()));
+      this.missile.setTargetable(true);
       this.missile.move(result.node);
     }
   }
 
   private getTrajectory(): TrajectoryTile[] {
-    const path = this.pathFinder.findPath(this.src!, this.dst) ?? [];
-    const rangeSquared = 9 * 9;
+    const path = this.pathFinder.findPath(this.src!, this.targetTile!) ?? [];
     return path.map((tile) => ({
       tile,
-      targetable: this.isTargetable(tile, rangeSquared),
+      // SAMs may intercept anywhere along the flight path, not only in the
+      // launch/terminal radius. Restricting this to the endpoints lets a
+      // fast missile reach its target before a launcher can engage it.
+      targetable: true,
     }));
-  }
-
-  private isTargetable(tile: TileRef, rangeSquared = 9 * 9): boolean {
-    return (
-      this.mg.euclideanDistSquared(tile, this.dst) < rangeSquared ||
-      (this.src !== null &&
-        this.mg.euclideanDistSquared(this.src, tile) < rangeSquared)
-    );
   }
 
   private detonate(): void {

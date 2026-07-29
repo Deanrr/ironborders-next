@@ -11,8 +11,14 @@ import {
   StrategicLocationType,
 } from "../../../core/game/NationalFraming";
 import { Controller } from "../../Controller";
-import { DragEvent, MouseMoveEvent, ZoomEvent } from "../../InputHandler";
+import {
+  DragEvent,
+  MouseMoveEvent,
+  MouseUpEvent,
+  ZoomEvent,
+} from "../../InputHandler";
 import { GoToPositionEvent, TransformHandler } from "../../TransformHandler";
+import { UIState } from "../../UIState";
 import { GameView } from "../../view";
 
 /** Map-facing national capital markers and connected-front direction cues. */
@@ -26,6 +32,9 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
 
   @property({ type: Object })
   public transform!: TransformHandler;
+
+  @property({ type: Object })
+  public uiState!: UIState;
 
   @state()
   private selectedFrontID: string | null = null;
@@ -99,6 +108,11 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
         @contextmenu=${this.preventMarkerContextMenu}
         @click=${(event: MouseEvent) => {
           event.stopPropagation();
+          if (this.uiState?.ghostStructure !== null) {
+            this.eventBus.emit(new MouseMoveEvent(x, y));
+            this.eventBus.emit(new MouseUpEvent(x, y));
+            return;
+          }
           this.eventBus.emit(new MouseMoveEvent(x, y));
           this.eventBus.emit(new GoToPositionEvent(worldX, worldY));
         }}
@@ -177,8 +191,7 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
       },
     }[location.type];
     if (!marker) return html``;
-    const captured =
-      location.ownerID !== null && location.ownerID !== nationID;
+    const captured = location.ownerID !== null && location.ownerID !== nationID;
     const color = location.threatened
       ? "#fb923c"
       : captured
@@ -191,12 +204,17 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
         : "secure";
     return html`<button
       class="absolute -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-sm border text-[8px] font-bold leading-none shadow"
-      style="left: ${x}px; top: ${y}px; color: ${color}; border-color: ${color}; background: rgba(15, 23, 42, 0.82); pointer-events: auto;"
+      style="left: ${x}px; top: ${y}px; width: 24px; height: 24px; color: ${color}; border-color: ${color}; background: rgba(15, 23, 42, 0.82); pointer-events: auto;"
       title="${marker.name} - ${status}"
       aria-label="${marker.name} - ${status}"
       @contextmenu=${this.preventMarkerContextMenu}
       @click=${(event: MouseEvent) => {
         event.stopPropagation();
+        if (this.uiState?.ghostStructure !== null) {
+          this.eventBus.emit(new MouseMoveEvent(x, y));
+          this.eventBus.emit(new MouseUpEvent(x, y));
+          return;
+        }
         this.eventBus.emit(new MouseMoveEvent(x, y));
         this.eventBus.emit(
           new GoToPositionEvent(
@@ -319,7 +337,10 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
           <span>Momentum: ${front.momentum}</span>
           <span>Pressure: ${Math.round(front.pressure * 100)}%</span>
           <span>Committed: ${Math.round(front.troopsCommitted)}</span>
-          <span>Territory: +${front.territoryGained} / -${front.territoryLost}</span>
+          <span
+            >Territory: +${front.territoryGained} /
+            -${front.territoryLost}</span
+          >
           <span
             >Direction: ${Math.round(front.directionX * 100)}%,
             ${Math.round(front.directionY * 100)}%</span

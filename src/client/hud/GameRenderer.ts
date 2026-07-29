@@ -157,6 +157,7 @@ export function createRenderer(
   nationalLocations.eventBus = eventBus;
   nationalLocations.game = game;
   nationalLocations.transform = transformHandler;
+  nationalLocations.uiState = uiState;
 
   const winModal = document.querySelector("win-modal") as WinModal;
   if (!(winModal instanceof WinModal)) {

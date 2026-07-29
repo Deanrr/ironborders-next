@@ -1484,8 +1484,18 @@ export class PlayerImpl implements Player {
     // valid launch against an empty tile: the client can then keep the target
     // cursor honest and the server will not accept a no-op purchase.
     const target = this.mg
-      .units(Structures.types)
-      .find((unit) => unit.isActive() && unit.tile() === tile);
+      .nearbyUnits(
+        tile,
+        2.5,
+        Structures.types,
+        ({ unit }) =>
+          unit.isActive() &&
+          unit.owner() !== this &&
+          !(
+            unit.owner().isPlayer() && this.isOnSameTeam(unit.owner() as Player)
+          ),
+      )
+      .sort((a, b) => a.distSquared - b.distSquared)[0]?.unit;
     if (target === undefined || target.owner() === this) {
       return false;
     }
