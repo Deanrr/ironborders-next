@@ -333,7 +333,8 @@ export class UnitImpl implements Unit {
     // else is either visible on the map or too low-stakes to surface.
     if (
       this._type !== UnitType.Warship &&
-      this._type !== UnitType.TransportShip
+      this._type !== UnitType.TransportShip &&
+      this._type !== UnitType.SupplyConvoy
     ) {
       return;
     }

@@ -105,6 +105,21 @@ describe("SAM", () => {
     expect(attacker.units(UnitType.AtomBomb)).toHaveLength(0);
   });
 
+  test("one sam should take down a cruise missile", async () => {
+    const sam = defender.buildUnit(UnitType.SAMLauncher, game.ref(1, 1), {});
+    game.addExecution(new SAMLauncherExecution(defender, null, sam));
+    attacker.buildUnit(UnitType.CruiseMissile, game.ref(1, 1), {
+      targetTile: game.ref(3, 1),
+      trajectory: [
+        { tile: game.ref(1, 1), targetable: true },
+        { tile: game.ref(2, 1), targetable: true },
+        { tile: game.ref(3, 1), targetable: true },
+      ],
+    });
+    executeTicks(game, 3);
+    expect(attacker.units(UnitType.CruiseMissile)).toHaveLength(0);
+  });
+
   test("sam should only get one nuke at a time", async () => {
     const sam = defender.buildUnit(UnitType.SAMLauncher, game.ref(1, 1), {});
     game.addExecution(new SAMLauncherExecution(defender, null, sam));

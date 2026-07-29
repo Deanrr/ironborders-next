@@ -420,7 +420,9 @@ export interface WinUpdate {
   type: GameUpdateType.Win;
   allPlayersStats: AllPlayersStats;
   winner: Winner;
-  campaignDebriefs?: Record<PlayerID, CampaignDebrief>;
+  // Keyed by stable clientID so the server can pair each debrief with the
+  // authenticated account that earned it.
+  campaignDebriefs?: Record<ClientID, CampaignDebrief>;
 }
 
 export interface HashUpdate {

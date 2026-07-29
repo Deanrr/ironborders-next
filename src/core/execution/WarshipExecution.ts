@@ -122,7 +122,10 @@ export class WarshipExecution implements Execution {
     }
 
     // Priority 3: Hunt trade ship only if not healing and no enemy warship
-    if (this.warship.targetUnit()?.type() === UnitType.TradeShip) {
+    if (
+      this.warship.targetUnit()?.type() === UnitType.TradeShip ||
+      this.warship.targetUnit()?.type() === UnitType.SupplyConvoy
+    ) {
       this.huntDownTradeShip();
       return;
     }
@@ -235,7 +238,12 @@ export class WarshipExecution implements Execution {
 
   private findTargetUnit(): Unit | undefined {
     return this.findBestTarget(
-      [UnitType.TransportShip, UnitType.Warship, UnitType.TradeShip],
+      [
+        UnitType.TransportShip,
+        UnitType.Warship,
+        UnitType.TradeShip,
+        UnitType.SupplyConvoy,
+      ],
       true,
     );
   }
@@ -286,7 +294,10 @@ export class WarshipExecution implements Execution {
 
       const type = unit.type();
 
-      if (includeTradeShips && type === UnitType.TradeShip) {
+      if (
+        includeTradeShips &&
+        (type === UnitType.TradeShip || type === UnitType.SupplyConvoy)
+      ) {
         if (warshipComponent === undefined) {
           warshipComponent = mg.getWaterComponent(this.warship.tile());
           hasReachablePort =
@@ -306,7 +317,7 @@ export class WarshipExecution implements Execution {
         if (
           !hasReachablePort ||
           patrolTile === undefined ||
-          unit.isSafeFromPirates() ||
+          (type === UnitType.TradeShip && unit.isSafeFromPirates()) ||
           unit.targetUnit()?.owner() === owner ||
           unit.targetUnit()?.owner().isFriendly(owner)
         ) {
@@ -320,7 +331,11 @@ export class WarshipExecution implements Execution {
       }
 
       const typePriority =
-        type === UnitType.TransportShip ? 0 : type === UnitType.Warship ? 1 : 2;
+        type === UnitType.TransportShip
+          ? 0
+          : type === UnitType.Warship
+            ? 1
+            : 2;
 
       if (
         bestUnit === undefined ||

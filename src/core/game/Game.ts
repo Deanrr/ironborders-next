@@ -185,9 +185,11 @@ export enum UnitType {
   City = "City",
   MIRV = "MIRV",
   MIRVWarhead = "MIRV Warhead",
+  CruiseMissile = "Cruise Missile",
   Train = "Train",
   Factory = "Factory",
   LogisticsHub = "Logistics Hub",
+  SupplyConvoy = "Supply Convoy",
 }
 
 export enum TrainType {
@@ -207,6 +209,7 @@ export const BuildableAttacks = unitTypeGroup([
   UnitType.AtomBomb,
   UnitType.HydrogenBomb,
   UnitType.MIRV,
+  UnitType.CruiseMissile,
   UnitType.Warship,
 ] as const);
 
@@ -266,9 +269,18 @@ export interface UnitParamsMap {
     trajectory: TrajectoryTile[];
   };
 
+  [UnitType.CruiseMissile]: {
+    targetTile?: TileRef;
+    trajectory: TrajectoryTile[];
+  };
+
   [UnitType.TradeShip]: {
     targetUnit: Unit;
     lastSetSafeFromPirates?: number;
+  };
+
+  [UnitType.SupplyConvoy]: {
+    targetUnit: Unit;
   };
 
   [UnitType.Train]: {
@@ -827,6 +839,10 @@ export interface Game extends GameMap {
     playerID: PlayerID | null,
   ): void;
 
+  // National logistics effects produced by Supply Convoys.
+  recordSupplyConvoyArrival(player: Player): void;
+  recordSupplyConvoyLoss(player: Player): void;
+
   displayChat(
     message: string,
     category: string,
@@ -929,9 +945,14 @@ export enum MessageType {
   CONQUERED_PLAYER,
   MIRV_INBOUND,
   NUKE_INBOUND,
+  CRUISE_MISSILE_INBOUND,
   NUKE_DETONATED,
+  CRUISE_MISSILE_DETONATED,
   HYDROGEN_BOMB_INBOUND,
   NAVAL_INVASION_INBOUND,
+  NAVAL_CONVOY_INBOUND,
+  SUPPLY_CONVOY_ARRIVED,
+  SUPPLY_CONVOY_LOST,
   SAM_MISS,
   SAM_HIT,
   CAPTURED_ENEMY_UNIT,
@@ -964,9 +985,14 @@ export const MESSAGE_TYPE_CATEGORIES: Record<MessageType, MessageCategory> = {
   [MessageType.CONQUERED_PLAYER]: MessageCategory.ATTACK,
   [MessageType.MIRV_INBOUND]: MessageCategory.NUKE,
   [MessageType.NUKE_INBOUND]: MessageCategory.NUKE,
+  [MessageType.CRUISE_MISSILE_INBOUND]: MessageCategory.NUKE,
   [MessageType.NUKE_DETONATED]: MessageCategory.NUKE,
+  [MessageType.CRUISE_MISSILE_DETONATED]: MessageCategory.NUKE,
   [MessageType.HYDROGEN_BOMB_INBOUND]: MessageCategory.NUKE,
   [MessageType.NAVAL_INVASION_INBOUND]: MessageCategory.ATTACK,
+  [MessageType.NAVAL_CONVOY_INBOUND]: MessageCategory.TRADE,
+  [MessageType.SUPPLY_CONVOY_ARRIVED]: MessageCategory.TRADE,
+  [MessageType.SUPPLY_CONVOY_LOST]: MessageCategory.TRADE,
   [MessageType.SAM_MISS]: MessageCategory.ATTACK,
   [MessageType.SAM_HIT]: MessageCategory.ATTACK,
   [MessageType.CAPTURED_ENEMY_UNIT]: MessageCategory.ATTACK,

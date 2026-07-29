@@ -48,6 +48,21 @@ const emptySummary = (): ChroniclePlayerSummary => ({
   unitsCaptured: 0,
 });
 
+export function experienceForDebrief(
+  summary: ChroniclePlayerSummary,
+  victory: boolean,
+): number {
+  return (
+    100 +
+    summary.frontsWon * 100 +
+    summary.capitalsCaptured * 150 +
+    summary.strategicLocationsSecured * 50 +
+    summary.nationsLiberated * 120 +
+    summary.nationsEliminated * 100 +
+    (victory ? 250 : 0)
+  );
+}
+
 export class MatchChronicle {
   private readonly summaries = new Map<PlayerID, ChroniclePlayerSummary>();
 
@@ -142,14 +157,10 @@ export class MatchChronicle {
     const result: Record<PlayerID, CampaignDebrief> = {};
     for (const player of contenders) {
       const summary = this.summaryFor(player, stats);
-      const experienceEarned =
-        100 +
-        summary.frontsWon * 100 +
-        summary.capitalsCaptured * 150 +
-        summary.strategicLocationsSecured * 50 +
-        summary.nationsLiberated * 120 +
-        summary.nationsEliminated * 100 +
-        (winnerID === player.id() ? 250 : 0);
+      const experienceEarned = experienceForDebrief(
+        summary,
+        winnerID === player.id(),
+      );
       result[player.id()] = {
         ...summary,
         placement: placement.get(player.id()) ?? contenders.length,

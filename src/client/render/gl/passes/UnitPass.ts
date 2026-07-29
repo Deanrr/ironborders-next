@@ -39,12 +39,14 @@ import {
   SMOOTHED_NUKE_TYPES,
   TrainType,
   UT_ATOM_BOMB,
+  UT_CRUISE_MISSILE,
   UT_HYDROGEN_BOMB,
   UT_MIRV,
   UT_MIRV_WARHEAD,
   UT_SAM_MISSILE,
   UT_SHELL,
   UT_TRADE_SHIP,
+  UT_SUPPLY_CONVOY,
   UT_TRAIN,
   UT_TRANSPORT,
   UT_WARSHIP,
@@ -130,6 +132,7 @@ const FLICKER_TYPES: ReadonlySet<string> = new Set([
   UT_MIRV_WARHEAD,
   UT_SAM_MISSILE,
   UT_SHELL,
+  UT_CRUISE_MISSILE,
 ]);
 
 /** Missile/projectile types — rendered on top of structures in the layer order.
@@ -141,6 +144,7 @@ const MISSILE_TYPES: ReadonlySet<string> = new Set([
   UT_SAM_MISSILE,
   UT_SHELL,
   UT_MIRV_WARHEAD,
+  UT_CRUISE_MISSILE,
 ]);
 
 /** Values per smoothing segment in the flat `smoothSegs` array:
@@ -276,6 +280,10 @@ export class UnitPass {
         this.typeToAtlasCol.set(header.unitTypes[i], col);
       }
     }
+    // Reuse the existing SAM missile atlas cell for the precision missile and
+    // trade-ship cell for supply convoys until dedicated art is commissioned.
+    this.typeToAtlasCol.set(UT_CRUISE_MISSILE, UNIT_ORDER.indexOf(UT_SAM_MISSILE));
+    this.typeToAtlasCol.set(UT_SUPPLY_CONVOY, UNIT_ORDER.indexOf(UT_TRADE_SHIP));
 
     // Compile shaders
     this.program = createProgram(

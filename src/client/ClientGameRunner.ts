@@ -769,6 +769,7 @@ export class ClientGameRunner {
       update.winner,
       this.lobby.gameStartInfo.lobbyCreatedAt,
       this.lobby.gameStartInfo.visibleAt,
+      update.campaignDebriefs,
     );
     endGame(record);
   }

@@ -289,6 +289,9 @@ export class LocalServer {
       this.startedAt,
       Date.now(),
       this.winner?.winner,
+      undefined,
+      undefined,
+      this.winner?.campaignDebriefs,
     );
 
     const result = PartialGameRecordSchema.safeParse(record);

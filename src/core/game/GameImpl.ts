@@ -962,16 +962,27 @@ export class GameImpl implements Game {
     for (const player of this.players()) {
       this.stats().recordFinalTiles(player, player.numTilesOwned());
     }
+    const debriefsByPlayerID = this.matchChronicle.buildDebriefs(
+      this.allPlayers().filter((player) => player.clientID() !== null),
+      allPlayersStats,
+      this.startTick === null ? this._ticks : this._ticks - this.startTick,
+      winner !== null && typeof winner !== "string" ? winner.id() : null,
+    );
+    const campaignDebriefs = Object.fromEntries(
+      this.allPlayers()
+        .filter((player) => player.clientID() !== null)
+        .flatMap((player) => {
+          const debrief = debriefsByPlayerID[player.id()];
+          return debrief === undefined
+            ? []
+            : [[player.clientID()!, debrief] as const];
+        }),
+    );
     this.addUpdate({
       type: GameUpdateType.Win,
       winner: winner === null ? undefined : this.makeWinner(winner),
       allPlayersStats,
-      campaignDebriefs: this.matchChronicle.buildDebriefs(
-        this.allPlayers().filter((player) => player.clientID() !== null),
-        allPlayersStats,
-        this.startTick === null ? this._ticks : this._ticks - this.startTick,
-        winner !== null && typeof winner !== "string" ? winner.id() : null,
-      ),
+      campaignDebriefs,
     });
   }
 
@@ -1091,6 +1102,14 @@ export class GameImpl implements Game {
       messageType: type,
       playerID: id,
     });
+  }
+
+  recordSupplyConvoyArrival(player: Player): void {
+    this.nationalFraming.recordSupplyConvoyArrival(player);
+  }
+
+  recordSupplyConvoyLoss(player: Player): void {
+    this.nationalFraming.recordSupplyConvoyLoss(player);
   }
 
   addUnit(u: Unit) {

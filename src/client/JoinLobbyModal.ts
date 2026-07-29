@@ -758,6 +758,8 @@ export class JoinLobbyModal extends BaseModal {
       "Atom Bomb": "unit_type.atom_bomb",
       "Hydrogen Bomb": "unit_type.hydrogen_bomb",
       MIRV: "unit_type.mirv",
+      "Cruise Missile": "unit_type.cruise_missile",
+      "Supply Convoy": "unit_type.supply_convoy",
       "Trade Ship": "player_stats_table.unit.trade",
       Transport: "player_stats_table.unit.trans",
       "MIRV Warhead": "player_stats_table.unit.mirvw",

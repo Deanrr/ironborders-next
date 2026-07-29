@@ -18,6 +18,7 @@ import {
   UT_CITY,
   UT_DEFENSE_POST,
   UT_FACTORY,
+  UT_LOGISTICS_HUB,
   UT_MISSILE_SILO,
   UT_PORT,
   UT_SAM_LAUNCHER,
@@ -169,6 +170,10 @@ export class StructureLevelPass {
       );
       if (col >= 0) this.typeToAtlasCol.set(header.unitTypes[i], col);
     }
+    this.typeToAtlasCol.set(
+      UT_LOGISTICS_HUB,
+      STRUCTURE_ORDER.indexOf(UT_MISSILE_SILO),
+    );
 
     this.kernTable = new Int8Array(CHAR_RANGE * CHAR_RANGE); // digits don't kern
 

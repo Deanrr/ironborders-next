@@ -19,6 +19,7 @@ import {
   UT_CITY,
   UT_DEFENSE_POST,
   UT_FACTORY,
+  UT_LOGISTICS_HUB,
   UT_MISSILE_SILO,
   UT_PORT,
   UT_SAM_LAUNCHER,
@@ -149,6 +150,12 @@ export class StructurePass {
         this.typeToAtlasCol.set(header.unitTypes[i], col);
       }
     }
+    // Logistics Hub uses the existing silo icon cell until the dedicated
+    // structure atlas artwork is added.
+    this.typeToAtlasCol.set(
+      UT_LOGISTICS_HUB,
+      STRUCTURE_ORDER.indexOf(UT_MISSILE_SILO),
+    );
 
     // Compile shaders
     this.program = createProgram(

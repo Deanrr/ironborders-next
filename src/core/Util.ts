@@ -7,6 +7,7 @@ import {
   GameConfig,
   GameID,
   GameRecord,
+  CampaignDebriefWire,
   PartialGameRecord,
   PlayerRecord,
   Turn,
@@ -264,6 +265,7 @@ export function createPartialGameRecord(
   lobbyCreatedAt?: number,
   // Time the lobby became visible to players (ms).
   visibleAt?: number,
+  campaignDebriefs?: Record<string, CampaignDebriefWire>,
 ): PartialGameRecord {
   const duration = Math.floor((end - start) / 1000);
   const num_turns = allTurns.length;
@@ -291,6 +293,7 @@ export function createPartialGameRecord(
       duration,
       num_turns,
       winner,
+      campaignDebriefs,
     },
     version: "v0.0.2",
     turns,

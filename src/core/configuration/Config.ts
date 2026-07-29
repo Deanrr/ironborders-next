@@ -207,6 +207,10 @@ export class Config {
     return 90;
   }
 
+  cruiseMissileSpeed(): number {
+    return 12;
+  }
+
   defensePostRange(): number {
     return 30;
   }
@@ -395,6 +399,11 @@ export class Config {
           cost: this.costWrapper(() => 5_000_000, UnitType.HydrogenBomb),
         };
         break;
+      case UnitType.CruiseMissile:
+        info = {
+          cost: this.costWrapper(() => 250_000, UnitType.CruiseMissile),
+        };
+        break;
       case UnitType.MIRV:
         info = {
           cost: (game: Game, player: Player) => {
@@ -414,6 +423,7 @@ export class Config {
         };
         break;
       case UnitType.TradeShip:
+      case UnitType.SupplyConvoy:
         info = {
           cost: () => 0n,
         };

@@ -21,6 +21,7 @@ export class NationWarshipBehavior {
   private trackedTransportShips: Set<Unit> = new Set();
   // Track our trade ships we currently own
   private trackedTradeShips: Set<Unit> = new Set();
+  private trackedSupplyConvoys: Set<Unit> = new Set();
   // Track incoming transport ships
   private trackedIncomingTransportShips: Set<Unit> = new Set();
   // Track incoming transport ships we have dealt with
@@ -91,6 +92,7 @@ export class NationWarshipBehavior {
   trackShipsAndRetaliate(): void {
     this.trackTransportShipsAndRetaliate();
     this.trackTradeShipsAndRetaliate();
+    this.trackSupplyConvoysAndRetaliate();
     this.trackIncomingTransportsAndRetaliate();
   }
 
@@ -139,6 +141,26 @@ export class NationWarshipBehavior {
         // Ship was ours and is now owned by someone else -> captured
         this.maybeRetaliateWithWarship(ship.tile(), ship.owner(), "trade");
         this.trackedTradeShips.delete(ship);
+      }
+    }
+  }
+
+  private trackSupplyConvoysAndRetaliate(): void {
+    this.player
+      .units(UnitType.SupplyConvoy)
+      .forEach((u) => this.trackedSupplyConvoys.add(u));
+    for (const convoy of this.trackedSupplyConvoys) {
+      if (!convoy.isActive()) {
+        this.trackedSupplyConvoys.delete(convoy);
+        continue;
+      }
+      if (convoy.owner().id() !== this.player.id()) {
+        this.maybeRetaliateWithWarship(
+          convoy.tile(),
+          convoy.owner(),
+          "trade",
+        );
+        this.trackedSupplyConvoys.delete(convoy);
       }
     }
   }

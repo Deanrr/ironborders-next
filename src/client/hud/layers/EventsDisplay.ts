@@ -108,8 +108,10 @@ const EVENT_FILTER_LABELS: Record<EventFilter, string> = {
 const TIER_1_TYPES: ReadonlySet<MessageType> = new Set([
   MessageType.NUKE_INBOUND,
   MessageType.HYDROGEN_BOMB_INBOUND,
+  MessageType.CRUISE_MISSILE_INBOUND,
   MessageType.MIRV_INBOUND,
   MessageType.NUKE_DETONATED,
+  MessageType.CRUISE_MISSILE_DETONATED,
   MessageType.NAVAL_INVASION_INBOUND,
   MessageType.ATTACK_REQUEST,
   MessageType.ALLIANCE_ACCEPTED,
@@ -153,6 +155,7 @@ const INCOMING_THREAT_TYPES: ReadonlySet<MessageType> = new Set([
   MessageType.MIRV_INBOUND,
   MessageType.NUKE_INBOUND,
   MessageType.HYDROGEN_BOMB_INBOUND,
+  MessageType.CRUISE_MISSILE_INBOUND,
 ]);
 
 @customElement("events-display")
@@ -351,7 +354,8 @@ export class EventsDisplay extends LitElement implements Controller {
     if (INCOMING_THREAT_TYPES.has(type)) return "threat";
     if (
       type === MessageType.ATTACK_REQUEST ||
-      type === MessageType.NUKE_DETONATED
+      type === MessageType.NUKE_DETONATED ||
+      type === MessageType.CRUISE_MISSILE_DETONATED
     ) {
       return "front";
     }
@@ -371,6 +375,7 @@ export class EventsDisplay extends LitElement implements Controller {
 
   private toneForMessageType(type: MessageType): EventTone {
     if (INCOMING_THREAT_TYPES.has(type)) return "critical";
+    if (type === MessageType.CRUISE_MISSILE_DETONATED) return "critical";
     if (type === MessageType.ALLIANCE_ACCEPTED) return "positive";
     if (type === MessageType.ALLIANCE_REJECTED || type === MessageType.ALLIANCE_BROKEN) {
       return "warning";
@@ -936,8 +941,15 @@ export class EventsDisplay extends LitElement implements Controller {
     }
 
     const unitView = this.game.unit(event.unitID);
-    const isNaval = event.messageType === MessageType.NAVAL_INVASION_INBOUND;
-    const prefix = isNaval ? "Naval fleet inbound" : "Missile inbound";
+    const isNaval =
+      event.messageType === MessageType.NAVAL_INVASION_INBOUND ||
+      event.messageType === MessageType.NAVAL_CONVOY_INBOUND;
+    const isCruise = event.messageType === MessageType.CRUISE_MISSILE_INBOUND;
+    const prefix = isNaval
+      ? "Naval fleet inbound"
+      : isCruise
+        ? "Cruise missile inbound"
+        : "Missile inbound";
 
     this.addEvent({
       description: `${prefix} — ${event.message}`,

@@ -122,6 +122,8 @@ export interface SupplyInput {
   troopCapacity: number;
   overextension?: number;
   logisticsHubs?: number;
+  supplyConvoySupport?: number;
+  supplyConvoyDisruptions?: number;
 }
 
 /** Derive a readable supply signal from live fronts and national pressure. */
@@ -135,6 +137,8 @@ export function deriveSupply(input: SupplyInput): number {
   pressure += commitment * 25;
   pressure += Math.min(20, Math.max(0, input.overextension ?? 0) * 0.2);
   pressure -= Math.min(18, Math.max(0, input.logisticsHubs ?? 0) * 5);
+  pressure -= Math.min(12, Math.max(0, input.supplyConvoySupport ?? 0) * 10);
+  pressure += Math.min(12, Math.max(0, input.supplyConvoyDisruptions ?? 0) * 10);
   if (input.capitalThreatened) pressure += 12;
   if (input.capitalEncircled) pressure += 18;
   return Math.round(Math.max(0, Math.min(100, 100 - pressure)));
@@ -189,6 +193,7 @@ export interface NationalProductionInput {
   capitalOccupied?: boolean;
   occupationResistance?: number;
   overextension?: number;
+  supplyConvoySupport?: number;
 }
 
 /**
@@ -208,6 +213,7 @@ export function deriveNationalProductionModifier({
   capitalOccupied = false,
   occupationResistance = 0,
   overextension = 0,
+  supplyConvoySupport = 0,
 }: NationalProductionInput): number {
   const occupiedFraction =
     1 - Math.max(0, Math.min(1, territoryFraction));
@@ -231,6 +237,7 @@ export function deriveNationalProductionModifier({
     0.15,
     Math.max(0, industrialRegions) * 0.02 + Math.max(0, majorCities) * 0.005,
   );
+  const convoyOutput = Math.min(0.1, Math.max(0, supplyConvoySupport) * 0.05);
   const totalBurden =
     occupiedFraction * 0.55 +
     frontPressure +
@@ -240,7 +247,7 @@ export function deriveNationalProductionModifier({
     Math.max(0, Math.min(100, warExhaustion)) * 0.0015;
   const modifier = Math.max(
     0.4,
-    Math.min(1, 1 - totalBurden + regionalOutput),
+    Math.min(1, 1 - totalBurden + regionalOutput + convoyOutput),
   );
   return Math.round(modifier * 100) / 100;
 }
@@ -764,6 +771,8 @@ const LIBERATION_AUTHORITY_TICKS = 50;
  */
 export class NationalFramingTracker {
   private readonly tracked = new Map<PlayerID, TrackedNation>();
+  private readonly convoySupportUntil = new Map<PlayerID, Tick>();
+  private readonly convoyDisruptionUntil = new Map<PlayerID, Tick>();
 
   constructor(private readonly game: Game) {
     const register = (nation: Nation) => {
@@ -792,6 +801,26 @@ export class NationalFramingTracker {
       if (this.tracked.has(player.id())) continue;
       register(new Nation(undefined, player.info()));
     }
+  }
+
+  recordSupplyConvoyArrival(player: Player): void {
+    this.convoySupportUntil.set(player.id(), this.game.ticks() + 120 * 10);
+  }
+
+  recordSupplyConvoyLoss(player: Player): void {
+    this.convoyDisruptionUntil.set(player.id(), this.game.ticks() + 60 * 10);
+  }
+
+  private convoySupport(player: Player): number {
+    return (this.convoySupportUntil.get(player.id()) ?? -1) > this.game.ticks()
+      ? 1
+      : 0;
+  }
+
+  private convoyDisruption(player: Player): number {
+    return (this.convoyDisruptionUntil.get(player.id()) ?? -1) > this.game.ticks()
+      ? 1
+      : 0;
   }
 
   evaluate(): {
@@ -908,6 +937,8 @@ export class NationalFramingTracker {
         troopCapacity: this.game.config().maxTroops(player),
         overextension: summary.overextension,
         logisticsHubs: player.unitCount(UnitType.LogisticsHub),
+        supplyConvoySupport: this.convoySupport(player),
+        supplyConvoyDisruptions: this.convoyDisruption(player),
       });
       const capitalIsOwned = summary.capital.ownerID === summary.nationID;
       const resistanceTarget = deriveOccupationResistance({
@@ -947,6 +978,7 @@ export class NationalFramingTracker {
         capitalOccupied: summary.capital.ownerID !== summary.nationID,
         occupationResistance: summary.occupationResistance,
         overextension: summary.overextension,
+        supplyConvoySupport: this.convoySupport(player),
       });
 
       states.push({

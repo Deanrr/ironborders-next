@@ -377,7 +377,13 @@ describe("deriveStrategicLocations", () => {
       deriveStrategicLocations(nation, owner, 4).map(
         (location) => location.type,
       ),
-    ).toEqual(["capital", "major_city", "port", "industrial_region"]);
+    ).toEqual([
+      "capital",
+      "major_city",
+      "port",
+      "industrial_region",
+      "logistics_hub",
+    ]);
   });
 });
 

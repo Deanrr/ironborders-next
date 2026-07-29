@@ -539,12 +539,15 @@ export function getMessageTypeClasses(type: MessageType): string {
     case MessageType.CAPTURED_ENEMY_UNIT:
     case MessageType.CONQUERED_PLAYER:
     case MessageType.ALLIANCE_ACCEPTED:
+    case MessageType.SUPPLY_CONVOY_ARRIVED:
       return severityColors["success"];
     case MessageType.ATTACK_FAILED:
     case MessageType.ALLIANCE_REJECTED:
     case MessageType.ALLIANCE_BROKEN:
     case MessageType.UNIT_DESTROYED:
     case MessageType.NUKE_DETONATED:
+    case MessageType.CRUISE_MISSILE_DETONATED:
+    case MessageType.SUPPLY_CONVOY_LOST:
       return severityColors["fail"];
     case MessageType.ATTACK_CANCELLED:
     case MessageType.ATTACK_REQUEST:
@@ -554,9 +557,11 @@ export function getMessageTypeClasses(type: MessageType): string {
     case MessageType.MIRV_INBOUND:
     case MessageType.NUKE_INBOUND:
     case MessageType.HYDROGEN_BOMB_INBOUND:
+    case MessageType.CRUISE_MISSILE_INBOUND:
     case MessageType.SAM_MISS:
     case MessageType.ALLIANCE_EXPIRED:
     case MessageType.NAVAL_INVASION_INBOUND:
+    case MessageType.NAVAL_CONVOY_INBOUND:
     case MessageType.RENEW_ALLIANCE:
       return severityColors["warn"];
     case MessageType.CHAT:

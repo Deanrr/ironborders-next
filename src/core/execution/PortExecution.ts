@@ -1,6 +1,7 @@
 import { Execution, Game, Unit, UnitType } from "../game/Game";
 import { PseudoRandom } from "../PseudoRandom";
 import { TradeShipExecution } from "./TradeShipExecution";
+import { SupplyConvoyExecution } from "./SupplyConvoyExecution";
 import { TrainStationExecution } from "./TrainStationExecution";
 
 export class PortExecution implements Execution {
@@ -41,6 +42,20 @@ export class PortExecution implements Execution {
 
     // Only check every 10 ticks for performance.
     if ((this.mg.ticks() + this.checkOffset) % 10 !== 0) {
+      return;
+    }
+
+    const convoyPorts = this.mg.config().isUnitDisabled(UnitType.SupplyConvoy)
+      ? []
+      : this.supplyConvoyPorts();
+    if (convoyPorts.length > 0 && this.random.chance(600 / this.port.level())) {
+      this.mg.addExecution(
+        new SupplyConvoyExecution(
+          this.port.owner(),
+          this.port,
+          this.random.randElement(convoyPorts),
+        ),
+      );
       return;
     }
 
@@ -140,5 +155,20 @@ export class PortExecution implements Execution {
       }
     }
     return weightedPorts;
+  }
+
+  private supplyConvoyPorts(): Unit[] {
+    const sourceComponent = this.mg.getWaterComponent(this.port.tile());
+    if (sourceComponent === null) return [];
+    return this.port
+      .owner()
+      .units(UnitType.Port)
+      .filter(
+        (port) =>
+          port !== this.port &&
+          port.isActive() &&
+          !port.isUnderConstruction() &&
+          this.mg.getWaterComponent(port.tile()) === sourceComponent,
+      );
   }
 }

@@ -70,6 +70,13 @@ export const buildTable: BuildItemDisplay[][] = [
       countable: false,
     },
     {
+      unitType: UnitType.CruiseMissile,
+      icon: missileSiloIcon,
+      description: "build_menu.desc.cruise_missile",
+      key: "unit_type.cruise_missile",
+      countable: false,
+    },
+    {
       unitType: UnitType.Warship,
       icon: warshipIcon,
       description: "build_menu.desc.warship",

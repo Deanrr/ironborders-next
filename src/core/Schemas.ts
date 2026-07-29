@@ -749,6 +749,31 @@ export const WinnerSchema = z
   .optional();
 export type Winner = z.infer<typeof WinnerSchema>;
 
+// Deterministic match-end summary produced by the simulation. Progression
+// awards are recalculated server-side from these bounded counters.
+export const CampaignDebriefSchema = z.object({
+  frontsWon: z.number().int().nonnegative(),
+  frontsLost: z.number().int().nonnegative(),
+  capitalsCaptured: z.number().int().nonnegative(),
+  nationsLiberated: z.number().int().nonnegative(),
+  nationsEliminated: z.number().int().nonnegative(),
+  strategicLocationsSecured: z.number().int().nonnegative(),
+  territoryGained: z.number().int().nonnegative(),
+  territoryLost: z.number().int().nonnegative(),
+  lowestSupply: z.number().min(0).max(1),
+  peakOverextension: z.number().min(0).max(1),
+  maximumWarExhaustion: z.number().min(0).max(1),
+  unitsConstructed: z.number().int().nonnegative(),
+  unitsDestroyed: z.number().int().nonnegative(),
+  unitsCaptured: z.number().int().nonnegative(),
+  placement: z.number().int().positive(),
+  durationTicks: z.number().int().nonnegative(),
+  // Informational only: the service must derive XP from the counters.
+  experienceEarned: z.number().int().nonnegative(),
+  victory: z.boolean(),
+});
+export type CampaignDebriefWire = z.infer<typeof CampaignDebriefSchema>;
+
 //
 // Server
 //
@@ -828,6 +853,7 @@ export const ClientSendWinnerSchema = z.object({
   type: z.literal("winner"),
   winner: WinnerSchema,
   allPlayersStats: AllPlayersStatsSchema,
+  campaignDebriefs: z.record(z.string(), CampaignDebriefSchema).optional(),
 });
 
 // A live snapshot of one human player at a given turn. Only deterministic sim
@@ -931,6 +957,7 @@ export const GameEndInfoSchema = GameStartInfoSchema.extend({
   duration: z.number().nonnegative(),
   num_turns: z.number(),
   winner: WinnerSchema,
+  campaignDebriefs: z.record(z.string(), CampaignDebriefSchema).optional(),
   lobbyFillTime: z.number().nonnegative(),
 });
 export type GameEndInfo = z.infer<typeof GameEndInfoSchema>;

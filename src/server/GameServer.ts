@@ -39,6 +39,7 @@ import { archive, finalizeGameRecord } from "./Archive";
 import { Client } from "./Client";
 import { ClientMsgRateLimiter } from "./ClientMsgRateLimiter";
 import { fetchCustomTribes } from "./CustomTribes";
+import { awardProgression } from "./ProgressionAwards";
 import { ServerEnv } from "./ServerEnv";
 import {
   noopMatchTelemetryEmitter,
@@ -1732,21 +1733,35 @@ export class GameServer {
       },
     );
     this.replayArchiveAttempted = true;
-    archive(
-      finalizeGameRecord(
-        createPartialGameRecord(
-          this.id,
-          this.gameStartInfo.config,
-          playerRecords,
-          this.turns,
-          this._startTime ?? 0,
-          Date.now(),
-          this.winner?.winner,
-          this.createdAt,
-          this.visibleAt,
-        ),
-      ),
+    const partialRecord = createPartialGameRecord(
+      this.id,
+      this.gameStartInfo.config,
+      playerRecords,
+      this.turns,
+      this._startTime ?? 0,
+      Date.now(),
+      this.winner?.winner,
+      this.createdAt,
+      this.visibleAt,
+      this.winner?.campaignDebriefs,
     );
+    archive(finalizeGameRecord(partialRecord));
+
+    // Account identity is resolved exclusively from the server-side client
+    // record. Each award has a stable match/account idempotency key, so a
+    // duplicate winner vote or archive retry cannot grant XP twice.
+    if (
+      this.winner?.winner !== undefined &&
+      this.winner.campaignDebriefs !== undefined
+    ) {
+      for (const player of this.gameStartInfo.players) {
+        const accountId = this.allClients.get(player.clientID)?.publicId;
+        const debrief = this.winner.campaignDebriefs[player.clientID];
+        if (accountId !== undefined && debrief !== undefined) {
+          void awardProgression(this.id, accountId, debrief);
+        }
+      }
+    }
   }
 
   private handleSynchronization() {

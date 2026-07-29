@@ -12,6 +12,7 @@ import {
 import { TileRef } from "../core/game/GameMap";
 import {
   AllPlayersStats,
+  CampaignDebriefWire,
   ClientHashMessage,
   ClientIntentMessage,
   ClientJoinMessage,
@@ -154,6 +155,7 @@ export class SendWinnerEvent implements GameEvent {
   constructor(
     public readonly winner: Winner,
     public readonly allPlayersStats: AllPlayersStats,
+    public readonly campaignDebriefs?: Record<string, CampaignDebriefWire>,
   ) {}
 }
 export class SendLiveStatsEvent implements GameEvent {
@@ -599,6 +601,7 @@ export class Transport {
         type: "winner",
         winner: event.winner,
         allPlayersStats: event.allPlayersStats,
+        campaignDebriefs: event.campaignDebriefs,
       } satisfies ClientSendWinnerMessage);
     } else {
       console.log(

@@ -1396,6 +1396,8 @@ export class PlayerImpl implements Player {
       case UnitType.AtomBomb:
       case UnitType.HydrogenBomb:
         return this.nukeSpawn(targetTile, unitType);
+      case UnitType.CruiseMissile:
+        return this.cruiseMissileSpawn(targetTile);
       case UnitType.MIRVWarhead:
         return targetTile;
       case UnitType.Port:
@@ -1408,6 +1410,8 @@ export class PlayerImpl implements Player {
       case UnitType.TransportShip:
         return canBuildTransportShip(this.mg, this, targetTile);
       case UnitType.TradeShip:
+        return this.tradeShipSpawn(targetTile);
+      case UnitType.SupplyConvoy:
         return this.tradeShipSpawn(targetTile);
       case UnitType.Train:
         return this.landBasedUnitSpawn(targetTile);
@@ -1469,6 +1473,25 @@ export class PlayerImpl implements Player {
         silo.isActive() && !silo.isInCooldown() && !silo.isUnderConstruction(),
     );
 
+    return bestSilo?.tile() ?? false;
+  }
+
+  private cruiseMissileSpawn(tile: TileRef): TileRef | false {
+    if (this.mg.isSpawnImmunityActive() || this.mg.isImpassable(tile)) {
+      return false;
+    }
+    const owner = this.mg.owner(tile);
+    if (owner.isPlayer() && (owner === this || this.isOnSameTeam(owner))) {
+      return false;
+    }
+    const bestSilo = findClosestBy(
+      this.units(UnitType.MissileSilo),
+      (silo) => this.mg.manhattanDist(silo.tile(), tile),
+      (silo) =>
+        silo.isActive() &&
+        !silo.isInCooldown() &&
+        !silo.isUnderConstruction(),
+    );
     return bestSilo?.tile() ?? false;
   }
 

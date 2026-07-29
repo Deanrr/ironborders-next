@@ -243,20 +243,28 @@ export class WinModal extends LitElement implements Controller {
     const winUpdates = updates !== null ? updates[GameUpdateType.Win] : [];
     winUpdates.forEach((wu) => {
       this.campaignDebrief =
-        this.game.myPlayer()?.id() !== undefined
-          ? (wu.campaignDebriefs?.[this.game.myPlayer()!.id()] ?? null)
+        this.game.myPlayer()?.clientID() !== null
+          ? (wu.campaignDebriefs?.[this.game.myPlayer()!.clientID()!] ?? null)
           : null;
       if (wu.winner === undefined) {
         // Match cancelled (e.g. a ranked 2v2 that didn't fill or fully
         // spawn): the game ends with no winner. Still vote the result to the
         // server so the record is archived winnerless (never ranked).
-        this.eventBus.emit(new SendWinnerEvent(undefined, wu.allPlayersStats));
+        this.eventBus.emit(
+          new SendWinnerEvent(
+            undefined,
+            wu.allPlayersStats,
+            wu.campaignDebriefs,
+          ),
+        );
         this._title = translateText("win_modal.match_cancelled");
         this.isWin = false;
         history.replaceState(null, "", `${window.location.pathname}?replay`);
         this.show();
       } else if (wu.winner[0] === "team") {
-        this.eventBus.emit(new SendWinnerEvent(wu.winner, wu.allPlayersStats));
+        this.eventBus.emit(
+          new SendWinnerEvent(wu.winner, wu.allPlayersStats, wu.campaignDebriefs),
+        );
         if (wu.winner[1] === this.game.myPlayer()?.team()) {
           this._title = translateText("win_modal.your_team");
           this.isWin = true;
@@ -281,7 +289,11 @@ export class WinModal extends LitElement implements Controller {
         const winnerClient = winner.clientID();
         if (winnerClient !== null) {
           this.eventBus.emit(
-            new SendWinnerEvent(["player", winnerClient], wu.allPlayersStats),
+            new SendWinnerEvent(
+              ["player", winnerClient],
+              wu.allPlayersStats,
+              wu.campaignDebriefs,
+            ),
           );
         }
         if (
