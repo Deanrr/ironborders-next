@@ -7,8 +7,6 @@ import { FrontStateUpdate } from "../../../core/game/GameUpdates";
 import {
   AuthorityState,
   NationalEventType,
-  StrategicLocation,
-  StrategicLocationType,
 } from "../../../core/game/NationalFraming";
 import { Controller } from "../../Controller";
 import {
@@ -144,107 +142,6 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
       default:
         return "#94a3b8";
     }
-  }
-
-  private renderStrategicLocation(
-    location: StrategicLocation,
-    nationID: string,
-    x: number,
-    y: number,
-  ) {
-    if (location.type === StrategicLocationType.Capital) return html``;
-    const marker = {
-      [StrategicLocationType.MajorCity]: {
-        label: "C",
-        color: "#fcd34d",
-        name: "major city",
-      },
-      [StrategicLocationType.Port]: {
-        label: "P",
-        color: "#67e8f9",
-        name: "port",
-      },
-      [StrategicLocationType.IndustrialRegion]: {
-        label: "I",
-        color: "#c4b5fd",
-        name: "industrial region",
-      },
-      [StrategicLocationType.LogisticsHub]: {
-        label: "H",
-        color: "#34d399",
-        name: "logistics hub",
-      },
-      [StrategicLocationType.Chokepoint]: {
-        label: "K",
-        color: "#fb923c",
-        name: "chokepoint",
-      },
-      [StrategicLocationType.Crossing]: {
-        label: "X",
-        color: "#f472b6",
-        name: "crossing",
-      },
-      [StrategicLocationType.StrategicIsland]: {
-        label: "S",
-        color: "#38bdf8",
-        name: "strategic island",
-      },
-    }[location.type];
-    if (!marker) return html``;
-    const captured = location.ownerID !== null && location.ownerID !== nationID;
-    const color = location.threatened
-      ? "#fb923c"
-      : captured
-        ? "#f87171"
-        : marker.color;
-    const status = location.threatened
-      ? "threatened"
-      : captured
-        ? "captured"
-        : "secure";
-    return html`<button
-      class="absolute -translate-x-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-sm border text-[8px] font-bold leading-none shadow"
-      style="left: ${x}px; top: ${y}px; width: 24px; height: 24px; color: ${color}; border-color: ${color}; background: rgba(15, 23, 42, 0.82); pointer-events: auto;"
-      title="${marker.name} - ${status}"
-      aria-label="${marker.name} - ${status}"
-      @contextmenu=${this.preventMarkerContextMenu}
-      @click=${(event: MouseEvent) => {
-        event.stopPropagation();
-        if (this.uiState?.ghostStructure !== null) {
-          this.eventBus.emit(new MouseMoveEvent(x, y));
-          this.eventBus.emit(new MouseUpEvent(x, y));
-          return;
-        }
-        this.eventBus.emit(new MouseMoveEvent(x, y));
-        this.eventBus.emit(
-          new GoToPositionEvent(
-            this.game.x(location.tile),
-            this.game.y(location.tile),
-          ),
-        );
-      }}
-    >
-      ${marker.label}
-    </button>`;
-  }
-
-  private shouldRenderStrategicLocation(location: StrategicLocation): boolean {
-    const isGeographic =
-      location.type === StrategicLocationType.Chokepoint ||
-      location.type === StrategicLocationType.Crossing ||
-      location.type === StrategicLocationType.StrategicIsland;
-    if (!isGeographic) return true;
-
-    // Border-derived markers are intentionally quiet when zoomed out. Scale
-    // the detail threshold from the current map-to-viewport fit so this works
-    // consistently across map sizes and window dimensions.
-    const viewport = this.transform.boundingRect();
-    const fitScale = Math.min(
-      viewport.width / Math.max(1, this.game.width()),
-      viewport.height / Math.max(1, this.game.height()),
-    );
-    const detailScale = Math.max(1.25, fitScale * 1.35);
-    return location.threatened === true || this.transform.scale >= detailScale;
   }
 
   private renderNationalPulse(event: NationalEventType, x: number, y: number) {
@@ -407,39 +304,13 @@ export class NationalLocationsOverlay extends LitElement implements Controller {
         ];
       });
 
-    const strategicLocations = this.game
-      .players()
-      .filter((player) => player.type() !== PlayerType.Bot)
-      .flatMap((player) => {
-        const state = this.game.nationalState(player.id());
-        return (state?.locations ?? [])
-          .filter(
-            (location) =>
-              location.type !== StrategicLocationType.Capital &&
-              this.shouldRenderStrategicLocation(location),
-          )
-          .flatMap((location) => {
-            const cell = new Cell(
-              this.game.x(location.tile),
-              this.game.y(location.tile),
-            );
-            if (!this.transform.isOnScreen(cell)) return [];
-            const screen = this.transform.worldToScreenCoordinates(cell);
-            return [
-              this.renderStrategicLocation(
-                location,
-                player.id(),
-                screen.x,
-                screen.y,
-              ),
-            ];
-          });
-      });
-
     const selectedFront = frontStates.find(
       (front) => front.frontID === this.selectedFrontID,
     );
-    return html`${nationalPulses}${fronts}${strategicLocations}${markers}${this.renderFrontInspector(
+    // Strategic location markers (C/P/I/H/K/X/S) intentionally stay off the
+    // board. They obscure the map and compete with the player-facing capital,
+    // front, and threat cues; locations remain available in the nation panel.
+    return html`${nationalPulses}${fronts}${markers}${this.renderFrontInspector(
       selectedFront,
     )}`;
   }

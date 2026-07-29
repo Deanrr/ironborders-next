@@ -54,6 +54,8 @@ interface GameEvent {
   onDelete?: () => void;
   focusID?: number;
   unitView?: UnitView;
+  /** True when this notice is addressed to the local player. */
+  playerSpecific?: boolean;
 }
 
 export type EventCategory =
@@ -67,7 +69,13 @@ export type EventCategory =
   | "progression";
 
 export type EventTone = "positive" | "neutral" | "warning" | "critical";
-type EventFilter = "all" | "war" | "nation" | "diplomacy" | "threats";
+type EventFilter =
+  | "all"
+  | "player"
+  | "war"
+  | "nation"
+  | "diplomacy"
+  | "threats";
 
 const EVENT_CATEGORY_LABELS: Record<EventCategory, string> = {
   threat: "THREAT",
@@ -100,6 +108,7 @@ const EVENT_TONE_CLASSES: Record<EventTone, string> = {
 
 const EVENT_FILTER_LABELS: Record<EventFilter, string> = {
   all: "All",
+  player: "My alerts",
   war: "War",
   nation: "Nation",
   diplomacy: "Diplomacy",
@@ -160,6 +169,9 @@ const INCOMING_THREAT_TYPES: ReadonlySet<MessageType> = new Set([
   MessageType.HYDROGEN_BOMB_INBOUND,
   MessageType.CRUISE_MISSILE_INBOUND,
 ]);
+
+const EVENT_RETENTION_TICKS = 300;
+const PLAYER_EVENT_RETENTION_TICKS = 600;
 
 @customElement("events-display")
 export class EventsDisplay extends LitElement implements Controller {
@@ -274,6 +286,7 @@ export class EventsDisplay extends LitElement implements Controller {
       }),
       type: MessageType.ALLIANCE_REQUEST,
       createdAt: this.game.ticks(),
+      playerSpecific: true,
     });
   }
 
@@ -318,7 +331,10 @@ export class EventsDisplay extends LitElement implements Controller {
     }
 
     let remainingEvents = this.events.filter((event) => {
-      const expired = this.game.ticks() - event.createdAt >= 80;
+      const retentionTicks = event.playerSpecific
+        ? PLAYER_EVENT_RETENTION_TICKS
+        : EVENT_RETENTION_TICKS;
+      const expired = this.game.ticks() - event.createdAt >= retentionTicks;
       const isInboundWarning =
         event.type === MessageType.NUKE_INBOUND ||
         event.type === MessageType.HYDROGEN_BOMB_INBOUND ||
@@ -396,6 +412,8 @@ export class EventsDisplay extends LitElement implements Controller {
     switch (this._eventFilter) {
       case "all":
         return true;
+      case "player":
+        return event.playerSpecific === true;
       case "war":
         return event.category === "front";
       case "nation":
@@ -555,6 +573,9 @@ export class EventsDisplay extends LitElement implements Controller {
       category: "conquest",
       tone: this.nationalEventTone(update.event),
       focusID: nation.smallID(),
+      playerSpecific:
+        update.nationID === myPlayer.id() ||
+        update.relatedNationID === myPlayer.id(),
     });
   }
 
@@ -608,6 +629,7 @@ export class EventsDisplay extends LitElement implements Controller {
     }
 
     let focusID: number | undefined;
+    const myPlayer = this.game.myPlayer();
     try {
       focusID = this.game.player(update.defenderID).smallID();
     } catch {
@@ -629,6 +651,10 @@ export class EventsDisplay extends LitElement implements Controller {
             ? "positive"
             : "neutral",
       focusID,
+      playerSpecific:
+        myPlayer !== null &&
+        (update.attackerID === myPlayer.id() ||
+          update.defenderID === myPlayer.id()),
     });
   }
 
@@ -659,6 +685,7 @@ export class EventsDisplay extends LitElement implements Controller {
       type: MessageType.CONQUERED_PLAYER,
       category: "faction",
       tone: "positive",
+      playerSpecific: true,
     });
   }
 
@@ -692,6 +719,8 @@ export class EventsDisplay extends LitElement implements Controller {
       unsafeDescription: true,
       unitView: unitView,
       focusID: event.focusPlayerID,
+      playerSpecific:
+        event.playerID !== null || event.focusPlayerID === myPlayer?.smallID(),
     });
   }
 
@@ -737,6 +766,7 @@ export class EventsDisplay extends LitElement implements Controller {
       highlight: true,
       type: MessageType.CHAT,
       unsafeDescription: false,
+      playerSpecific: true,
     });
     this.eventBus.emit(new PlaySoundEffectEvent("message"));
   }
@@ -763,6 +793,7 @@ export class EventsDisplay extends LitElement implements Controller {
       highlight: true,
       createdAt: this.game.ticks(),
       focusID: update.request.recipientID,
+      playerSpecific: true,
     });
   }
 
@@ -801,6 +832,7 @@ export class EventsDisplay extends LitElement implements Controller {
         highlight: true,
         createdAt: this.game.ticks(),
         focusID: update.betrayedID,
+        playerSpecific: true,
       });
     } else if (betrayed === myPlayer) {
       this.eventBus.emit(new PlaySoundEffectEvent("alliance-broken"));
@@ -812,6 +844,7 @@ export class EventsDisplay extends LitElement implements Controller {
         highlight: true,
         createdAt: this.game.ticks(),
         focusID: update.traitorID,
+        playerSpecific: true,
       });
     }
   }
@@ -838,6 +871,7 @@ export class EventsDisplay extends LitElement implements Controller {
       highlight: true,
       createdAt: this.game.ticks(),
       focusID: otherID,
+      playerSpecific: true,
     });
   }
 
@@ -876,6 +910,7 @@ export class EventsDisplay extends LitElement implements Controller {
       highlight: true,
       createdAt: this.game.ticks(),
       focusID: other.smallID(),
+      playerSpecific: true,
     });
   }
 
@@ -895,6 +930,7 @@ export class EventsDisplay extends LitElement implements Controller {
       highlight: true,
       createdAt: this.game.ticks(),
       focusID: event.targetID,
+      playerSpecific: true,
     });
   }
 
@@ -931,6 +967,7 @@ export class EventsDisplay extends LitElement implements Controller {
         highlight: true,
         createdAt: this.game.ticks(),
         focusID: update.emoji.senderID,
+        playerSpecific: true,
       });
     } else if (sender === myPlayer && recipient !== AllPlayers) {
       this.addEvent({
@@ -943,6 +980,7 @@ export class EventsDisplay extends LitElement implements Controller {
         highlight: true,
         createdAt: this.game.ticks(),
         focusID: recipient.smallID(),
+        playerSpecific: true,
       });
     }
   }
@@ -979,6 +1017,7 @@ export class EventsDisplay extends LitElement implements Controller {
       highlight: true,
       createdAt: this.game.ticks(),
       unitView: unitView,
+      playerSpecific: true,
     });
   }
 
@@ -1112,6 +1151,7 @@ export class EventsDisplay extends LitElement implements Controller {
                 ${(
                   [
                     "all",
+                    "player",
                     "war",
                     "nation",
                     "diplomacy",
