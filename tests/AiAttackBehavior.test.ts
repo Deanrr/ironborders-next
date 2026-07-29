@@ -1,6 +1,9 @@
 import { AttackExecution } from "../src/core/execution/AttackExecution";
 import { NationEmojiBehavior } from "../src/core/execution/nation/NationEmojiBehavior";
-import { AiAttackBehavior } from "../src/core/execution/utils/AiAttackBehavior";
+import {
+  AiAttackBehavior,
+  findCapitalOccupier,
+} from "../src/core/execution/utils/AiAttackBehavior";
 import {
   Difficulty,
   Game,
@@ -13,6 +16,62 @@ import { PseudoRandom } from "../src/core/PseudoRandom";
 import { setup } from "./util/Setup";
 
 describe("Ai Attack Behavior", () => {
+  test("identifies the live occupier of a nation's capital", () => {
+    const nation = {
+      id: () => "nation",
+      spawnTile: () => 7,
+      isFriendly: () => false,
+    } as never as Player;
+    const occupier = {
+      id: () => "occupier",
+      isPlayer: () => true,
+    } as never as Player;
+    const game = {
+      owner: (tile: number) => (tile === 7 ? occupier : { isPlayer: () => false }),
+    } as never as Game;
+
+    expect(findCapitalOccupier(game, nation)).toBe(occupier);
+  });
+
+  test("prioritizes liberation even below normal reserve thresholds", async () => {
+    const testGame = await setup("big_plains", {
+      difficulty: Difficulty.Impossible,
+    });
+    const nation = testGame.addPlayer(
+      new PlayerInfo("occupied_nation", PlayerType.Nation, null, "occupied"),
+    );
+    const occupier = testGame.addPlayer(
+      new PlayerInfo("occupier", PlayerType.Human, null, "occupier"),
+    );
+
+    assignAlternatingLandTiles(testGame, [nation, occupier], 24);
+    const capital = Array.from(nation.tiles())[0];
+    if (capital === undefined) throw new Error("nation did not receive a capital tile");
+    vi.spyOn(nation, "spawnTile").mockReturnValue(capital);
+    occupier.conquer(capital);
+
+    const random = new PseudoRandom(42);
+    const behavior = new AiAttackBehavior(
+      random,
+      testGame,
+      nation,
+      0.95,
+      0.95,
+      0.2,
+      { maybeBetray: vi.fn() } as never,
+      new NationEmojiBehavior(random, testGame, nation),
+    );
+    const sendAttack = vi
+      .spyOn(behavior, "sendAttack")
+      .mockReturnValue(true);
+
+    (behavior as unknown as {
+      attackBestTarget: (friends: Player[], enemies: Player[]) => void;
+    }).attackBestTarget([], [occupier]);
+
+    expect(sendAttack).toHaveBeenCalledWith(occupier, true);
+  });
+
   let game: Game;
   let bot: Player;
   let human: Player;

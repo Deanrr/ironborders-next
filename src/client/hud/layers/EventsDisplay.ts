@@ -3,6 +3,8 @@ import { customElement, query, state } from "lit/decorators.js";
 import { DirectiveResult } from "lit/directive.js";
 import { unsafeHTML, UnsafeHTMLDirective } from "lit/directives/unsafe-html.js";
 import { EventBus } from "../../../core/EventBus";
+import { FrontEventType, FrontMomentum } from "../../../core/game/FrontFraming";
+import { FactionEventType } from "../../../core/game/FactionFraming";
 import { AllPlayers, MessageType } from "../../../core/game/Game";
 import {
   AllianceExpiredUpdate,
@@ -12,10 +14,16 @@ import {
   DisplayMessageUpdate,
   DonateEventUpdate,
   EmojiUpdate,
+  FrontEventUpdate,
+  FactionEventUpdate,
   GameUpdateType,
+  NationalEventUpdate,
   TargetPlayerUpdate,
   UnitIncomingUpdate,
 } from "../../../core/game/GameUpdates";
+import { NationalEventType } from "../../../core/game/NationalFraming";
+import { StrategicLocationType } from "../../../core/game/NationalFraming";
+import { TileRef } from "../../../core/game/GameMap";
 import { UserSettings } from "../../../core/game/UserSettings";
 import { Controller } from "../../Controller";
 import { SendAllianceRequestIntentEvent } from "../../Transport";
@@ -61,6 +69,38 @@ const TIER_1_TYPES: ReadonlySet<MessageType> = new Set([
 ]);
 
 const isTier1 = (type: MessageType): boolean => TIER_1_TYPES.has(type);
+
+const ACTIONABLE_NATIONAL_EVENTS: ReadonlySet<NationalEventType> = new Set([
+  NationalEventType.BorderBreached,
+  NationalEventType.DefensiveLineBroken,
+  NationalEventType.MajorRegionSecured,
+  NationalEventType.CapitalThreatened,
+  NationalEventType.CapitalSecured,
+  NationalEventType.CapitalEncircled,
+  NationalEventType.CapitalCaptured,
+  NationalEventType.GovernmentDisplaced,
+  NationalEventType.NationOccupied,
+  NationalEventType.NationLiberated,
+  NationalEventType.LiberationAttempted,
+  NationalEventType.NationEliminated,
+  NationalEventType.StrategicLocationThreatened,
+  NationalEventType.StrategicLocationCaptured,
+]);
+
+const ACTIONABLE_FRONT_MOMENTA: ReadonlySet<FrontMomentum> = new Set([
+  FrontMomentum.Advancing,
+  FrontMomentum.Overextended,
+  FrontMomentum.Collapsing,
+  FrontMomentum.Reinforced,
+  FrontMomentum.Breakthrough,
+]);
+
+const INCOMING_THREAT_TYPES: ReadonlySet<MessageType> = new Set([
+  MessageType.NAVAL_INVASION_INBOUND,
+  MessageType.MIRV_INBOUND,
+  MessageType.NUKE_INBOUND,
+  MessageType.HYDROGEN_BOMB_INBOUND,
+]);
 
 @customElement("events-display")
 export class EventsDisplay extends LitElement implements Controller {
@@ -139,6 +179,9 @@ export class EventsDisplay extends LitElement implements Controller {
     [GameUpdateType.UnitIncoming, this.onUnitIncomingEvent.bind(this)],
     [GameUpdateType.AllianceExpired, this.onAllianceExpiredEvent.bind(this)],
     [GameUpdateType.DonateEvent, this.onDonateEvent.bind(this)],
+    [GameUpdateType.NationalEvent, this.onNationalEvent.bind(this)],
+    [GameUpdateType.FrontEvent, this.onFrontEvent.bind(this)],
+    [GameUpdateType.FactionEvent, this.onFactionEvent.bind(this)],
   ] as const;
 
   constructor() {
@@ -246,6 +289,209 @@ export class EventsDisplay extends LitElement implements Controller {
   private addEvent(event: GameEvent) {
     this.events = [...this.events, event];
     this.requestUpdate();
+  }
+
+  /** Keep national-war notices local to the player's current theater. */
+  private isTileNearMyNation(tile: TileRef | undefined): boolean {
+    if (tile === undefined || !this.game.isValidRef(tile)) return false;
+    const myPlayer = this.game.myPlayer();
+    if (!myPlayer) return false;
+
+    const anchors: TileRef[] = [];
+    const nationalState = this.game.nationalState(myPlayer.id());
+    if (nationalState) {
+      anchors.push(nationalState.capitalTile);
+      anchors.push(...nationalState.locations.map((location) => location.tile));
+    }
+    const nameLocation = myPlayer.nameLocation();
+    if (nameLocation && this.game.isValidCoord(nameLocation.x, nameLocation.y)) {
+      anchors.push(this.game.ref(nameLocation.x, nameLocation.y));
+    }
+    anchors.push(...myPlayer.units().map((unit) => unit.tile()));
+    if (anchors.length === 0) return false;
+
+    const radius = Math.max(
+      24,
+      Math.min(80, Math.round(Math.sqrt(Math.max(1, myPlayer.numTilesOwned())) * 2)),
+    );
+    const targetX = this.game.x(tile);
+    const targetY = this.game.y(tile);
+    return anchors.some((anchor) => {
+      if (!this.game.isValidRef(anchor)) return false;
+      const dx = this.game.x(anchor) - targetX;
+      const dy = this.game.y(anchor) - targetY;
+      return dx * dx + dy * dy <= radius * radius;
+    });
+  }
+
+  private isFrontRelevant(update: FrontEventUpdate): boolean {
+    const myPlayer = this.game.myPlayer();
+    if (!myPlayer) return false;
+    if (update.attackerID === myPlayer.id() || update.defenderID === myPlayer.id()) {
+      return true;
+    }
+    const front = this.game.frontStates().find(
+      (candidate) => candidate.frontID === update.frontID,
+    );
+    return (
+      (front?.positions ?? []).some((tile) => this.isTileNearMyNation(tile)) ||
+      this.isTileNearMyNation(update.tile)
+    );
+  }
+
+  private onNationalEvent(update: NationalEventUpdate) {
+    if (!ACTIONABLE_NATIONAL_EVENTS.has(update.event)) return;
+    const myPlayer = this.game.myPlayer();
+    if (!myPlayer) return;
+    if (
+      update.nationID !== myPlayer.id() &&
+      update.relatedNationID !== myPlayer.id() &&
+      !this.isTileNearMyNation(update.tile)
+    ) {
+      return;
+    }
+
+    let nation: PlayerView;
+    try {
+      nation = this.game.player(update.nationID);
+    } catch {
+      return;
+    }
+
+    const name = nation.displayName();
+    const descriptions: Record<NationalEventType, string> = {
+      [NationalEventType.BorderBreached]: `${name} border breached`,
+      [NationalEventType.DefensiveLineBroken]: `${name} defensive line broken`,
+      [NationalEventType.MajorRegionSecured]: `${name} major region secured`,
+      [NationalEventType.CapitalThreatened]: `${name} capital threatened`,
+      [NationalEventType.CapitalSecured]: `${name} capital secured`,
+      [NationalEventType.CapitalEncircled]: `${name} capital encircled`,
+      [NationalEventType.CapitalCaptured]: `${name} capital captured`,
+      [NationalEventType.GovernmentDisplaced]: `${name} government displaced`,
+      [NationalEventType.NationOccupied]: `${name} occupied`,
+      [NationalEventType.ResistanceSurging]: `${name} resistance surging`,
+      [NationalEventType.ResistanceContained]: `${name} resistance contained`,
+      [NationalEventType.NationPartiallyOccupied]: `${name} partially occupied`,
+      [NationalEventType.NationLiberated]: `${name} liberated`,
+      [NationalEventType.LiberationAttempted]: `${name} liberation attempt`,
+      [NationalEventType.NationEliminated]: `${name} eliminated`,
+      [NationalEventType.SupplyCrisis]: `${name} supply crisis`,
+      [NationalEventType.SupplyRestored]: `${name} supply restored`,
+      [NationalEventType.WarExhaustionHigh]: `${name} war exhaustion high`,
+      [NationalEventType.WarExhaustionRecovered]: `${name} war exhaustion eased`,
+      [NationalEventType.ProductionDisrupted]: `${name} production disrupted`,
+      [NationalEventType.ProductionRecovered]: `${name} production recovered`,
+      [NationalEventType.OverextensionHigh]: `${name} overextended`,
+      [NationalEventType.OverextensionRecovered]: `${name} overextension eased`,
+      [NationalEventType.StrategicLocationThreatened]: `${name} strategic location threatened`,
+      [NationalEventType.StrategicLocationCaptured]: `${name} strategic location captured`,
+      [NationalEventType.StrategicLocationSecured]: `${name} strategic location secured`,
+    };
+    const locationLabels: Partial<Record<StrategicLocationType, string>> = {
+      [StrategicLocationType.MajorCity]: "major city",
+      [StrategicLocationType.Port]: "port",
+      [StrategicLocationType.IndustrialRegion]: "industrial region",
+      [StrategicLocationType.Chokepoint]: "chokepoint",
+      [StrategicLocationType.Crossing]: "crossing",
+      [StrategicLocationType.StrategicIsland]: "strategic island",
+    };
+    const locationLabel = update.locationType
+      ? locationLabels[update.locationType]
+      : undefined;
+    const baseDescription = locationLabel
+      ? `${name} ${locationLabel} ${
+          update.event === NationalEventType.StrategicLocationThreatened
+            ? "threatened"
+            : update.event === NationalEventType.StrategicLocationCaptured
+              ? "captured"
+              : "secured"
+        }`
+            : descriptions[update.event];
+    let relatedName: string | undefined;
+    if (
+      update.relatedNationID !== undefined &&
+      update.relatedNationID !== update.nationID
+    ) {
+      try {
+        relatedName = this.game.player(update.relatedNationID).displayName();
+      } catch {
+        // The related player may have been removed on the same tick.
+      }
+    }
+    const description = relatedName
+      ? `${baseDescription} by ${relatedName}`
+      : baseDescription;
+    this.addEvent({
+      description,
+      createdAt: this.game.ticks(),
+      highlight: true,
+      type: MessageType.CONQUERED_PLAYER,
+      focusID: nation.smallID(),
+    });
+  }
+
+  private onFrontEvent(update: FrontEventUpdate) {
+    if (!this.isFrontRelevant(update)) return;
+    if (
+      update.event === FrontEventType.MomentumChanged &&
+      !ACTIONABLE_FRONT_MOMENTA.has(update.momentum)
+    ) {
+      return;
+    }
+
+    let description: string;
+    if (update.event === FrontEventType.Opened) {
+      description = `${update.name} opened`;
+    } else if (update.event === FrontEventType.Ended) {
+      description = `${update.name} ended`;
+    } else {
+      const previous = update.previousMomentum
+        ? ` from ${update.previousMomentum}`
+        : "";
+      description = `${update.name} momentum ${previous} -> ${update.momentum}`;
+    }
+
+    let focusID: number | undefined;
+    try {
+      focusID = this.game.player(update.defenderID).smallID();
+    } catch {
+      // A front can end on the same tick its defender is removed.
+    }
+    this.addEvent({
+      description,
+      createdAt: this.game.ticks(),
+      highlight: update.event !== FrontEventType.Ended,
+      type: MessageType.ATTACK_REQUEST,
+      focusID,
+    });
+  }
+
+  private onFactionEvent(update: FactionEventUpdate) {
+    const myPlayer = this.game.myPlayer();
+    // Coalition churn is not a player-facing alert. Keep only actionable
+    // objectives for the player's own faction.
+    if (
+      !myPlayer ||
+      !update.members.includes(myPlayer.id()) ||
+      (update.event !== FactionEventType.VictoryReady &&
+        update.event !== FactionEventType.ObjectiveSecured)
+    ) {
+      return;
+    }
+
+    const target = update.objectiveLocationType
+      ? ` -> ${update.objectiveLocationType.replace(/_/g, " ")}`
+      : "";
+    const description =
+      update.event === FactionEventType.VictoryReady
+        ? `${update.label} victory objective ready${target}`
+        : `${update.label} objective secured${target}`;
+    this.addEvent({
+      description,
+      createdAt: this.game.ticks(),
+      highlight: true,
+      type: MessageType.CONQUERED_PLAYER,
+    });
   }
 
   onDisplayMessageEvent(event: DisplayMessageUpdate) {
@@ -536,14 +782,20 @@ export class EventsDisplay extends LitElement implements Controller {
   onUnitIncomingEvent(event: UnitIncomingUpdate) {
     const myPlayer = this.game.myPlayer();
 
-    if (!myPlayer || myPlayer.smallID() !== event.playerID) {
+    if (
+      !myPlayer ||
+      myPlayer.smallID() !== event.playerID ||
+      !INCOMING_THREAT_TYPES.has(event.messageType)
+    ) {
       return;
     }
 
     const unitView = this.game.unit(event.unitID);
+    const isNaval = event.messageType === MessageType.NAVAL_INVASION_INBOUND;
+    const prefix = isNaval ? "Naval fleet inbound" : "Missile inbound";
 
     this.addEvent({
-      description: event.message,
+      description: `${prefix} — ${event.message}`,
       type: event.messageType,
       unsafeDescription: false,
       highlight: true,

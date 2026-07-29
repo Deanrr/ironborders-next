@@ -12,6 +12,7 @@ import {
   UnitType,
 } from "../game/Game";
 import { TileRef } from "../game/GameMap";
+import { NationDoctrine, resolveNationDoctrine } from "../game/NationDoctrine";
 import { PseudoRandom } from "../PseudoRandom";
 import { GameID } from "../Schemas";
 import { assertNever, simpleHash } from "../Util";
@@ -38,6 +39,7 @@ export class NationExecution implements Execution {
   private structureBehavior!: NationStructureBehavior;
   private mg: Game;
   private player: Player | null = null;
+  private readonly doctrine: NationDoctrine;
 
   private attackRate: number;
   private attackTick: number;
@@ -57,6 +59,7 @@ export class NationExecution implements Execution {
     this.triggerRatio = this.random.nextInt(50, 60) / 100;
     this.reserveRatio = this.random.nextInt(30, 40) / 100;
     this.expandRatio = this.random.nextInt(10, 20) / 100;
+    this.doctrine = resolveNationDoctrine(nation.playerInfo.id);
   }
 
   init(mg: Game) {
@@ -200,6 +203,7 @@ export class NationExecution implements Execution {
     this.updateRelationsFromEmbargos();
     this.allianceBehavior.handleAllianceRequests();
     this.allianceBehavior.handleAllianceExtensionRequests();
+    this.allianceBehavior.supportAlliedFront();
     this.mirvBehavior.considerMIRV();
     this.structureBehavior.handleStructures();
     this.warshipBehavior.maybeSpawnWarship();
@@ -228,6 +232,7 @@ export class NationExecution implements Execution {
       this.mg,
       this.player,
       this.emojiBehavior,
+      this.doctrine,
     );
     this.warshipBehavior = new NationWarshipBehavior(
       this.random,
@@ -244,6 +249,7 @@ export class NationExecution implements Execution {
       this.expandRatio,
       this.allianceBehavior,
       this.emojiBehavior,
+      this.doctrine,
     );
     this.nukeBehavior = new NationNukeBehavior(
       this.random,
@@ -256,6 +262,7 @@ export class NationExecution implements Execution {
       this.random,
       this.mg,
       this.player,
+      this.doctrine,
     );
     this.behaviorsInitialized = true;
   }

@@ -11,6 +11,11 @@ import {
 } from "../../../core/game/Game";
 import { TileRef } from "../../../core/game/GameMap";
 import { AllianceView } from "../../../core/game/GameUpdates";
+import {
+  AuthorityState,
+  StrategicLocationType,
+} from "../../../core/game/NationalFraming";
+import { nationDoctrineLabel } from "../../../core/game/NationDoctrine";
 import { Controller } from "../../Controller";
 import {
   ContextMenuEvent,
@@ -390,7 +395,111 @@ export class PlayerInfoOverlay extends LitElement implements Controller {
             )}
             ${this.displayUnitCount(player, UnitType.Warship, warshipIcon)}
           </div>
+          ${player.type() !== PlayerType.Bot
+            ? this.renderNationalFraming(player)
+            : html``}
         </div>
+      </div>
+    `;
+  }
+
+  private renderNationalFraming(player: PlayerView) {
+    const state = this.game.nationalState(player.id());
+    if (state === undefined) {
+      return html`<div class="text-[10px] text-white/50 mt-1">
+        National status initializing
+      </div>`;
+    }
+    const authorityLabels: Record<AuthorityState, string> = {
+      [AuthorityState.Sovereign]: "Sovereign",
+      [AuthorityState.Contested]: "Contested",
+      [AuthorityState.PartiallyOccupied]: "Partially occupied",
+      [AuthorityState.CapitalThreatened]: "Capital threatened",
+      [AuthorityState.CapitalOccupied]: "Capital occupied",
+      [AuthorityState.GovernmentDisplaced]: "Government displaced",
+      [AuthorityState.FullyOccupied]: "Fully occupied",
+      [AuthorityState.Liberated]: "Liberated",
+    };
+    const capitalStatus = state.capitalEncircled
+      ? "Encircled"
+      : state.capitalThreatened
+        ? "Threatened"
+        : "Secure";
+    const activeFronts = this.game
+      .frontStates()
+      .filter(
+        (front) =>
+          front.attackerID === player.id() || front.defenderID === player.id(),
+      ).length;
+    const faction = this.game
+      .factionStates()
+      .find((candidate) => candidate.members.includes(player.id()));
+    const relationNames = (ids: string[]) =>
+      ids
+        .map((id) => {
+          try {
+            return this.game.player(id).displayName();
+          } catch {
+            return id;
+          }
+        })
+        .join(", ");
+    const allies = state.allies ?? [];
+    const enemies = state.enemies ?? [];
+    const locationCounts = (state.locations ?? []).reduce(
+      (counts, location) => {
+        if (location.type === StrategicLocationType.Port) counts.ports++;
+        if (location.type === StrategicLocationType.IndustrialRegion)
+          counts.industrial++;
+        if (location.type === StrategicLocationType.MajorCity) counts.cities++;
+        if (location.type === StrategicLocationType.Chokepoint)
+          counts.chokepoints++;
+        if (location.type === StrategicLocationType.Crossing)
+          counts.crossings++;
+        if (location.type === StrategicLocationType.StrategicIsland)
+          counts.islands++;
+        return counts;
+      },
+      { cities: 0, ports: 0, industrial: 0, chokepoints: 0, crossings: 0, islands: 0 },
+    );
+    return html`
+      <div
+        class="flex flex-wrap gap-x-2 gap-y-0.5 mt-1 text-[10px] text-white/70"
+      >
+        <span>Authority: ${authorityLabels[state.authorityState]}</span>
+        <span
+          >Doctrine:
+          ${state.doctrine ? nationDoctrineLabel(state.doctrine) : "Unassigned"}</span
+        >
+        <span>Capital: ${capitalStatus}</span>
+        <span>Territory: ${Math.round(state.territoryFraction * 100)}%</span>
+        <span>Stability: ${state.stability ?? "-"}%</span>
+        <span>Resistance: ${state.occupationResistance ?? "-"}%</span>
+        <span>Supply: ${state.supply ?? "-"}%</span>
+        <span>Overextension: ${state.overextension ?? "-"}%</span>
+        <span>Exhaustion: ${state.warExhaustion ?? "-"}%</span>
+        <span>Output: ${state.productionModifier === undefined ? "-" : Math.round(state.productionModifier * 100)}%</span>
+        <span title=${relationNames(allies)}>Allies: ${allies.length}</span>
+        <span title=${relationNames(enemies)}>Enemies: ${enemies.length}</span>
+        <span
+          >Recent: ${state.territoryDelta >= 0 ? "+" : ""}${state.territoryDelta}
+          tiles</span
+        >
+        <span>Fronts: ${activeFronts}</span>
+        <span>
+          Locations:
+          ${locationCounts.cities}C/${locationCounts.ports}P/${locationCounts.industrial}I
+          ${locationCounts.chokepoints}K/${locationCounts.crossings}X/${locationCounts.islands}S
+        </span>
+        ${faction
+          ? html`<span
+              >Objective: ${faction.objective.replace(/_/g, " ")}${
+                faction.objectiveLocationType
+                  ? ` · ${faction.objectiveLocationType.replace(/_/g, " ")}`
+                  : ""
+              }${faction.objectiveSecured ? " ✓" : ""} · ${Math.round(faction.victoryProgress * 100)}%</span
+            >`
+          : html``}
       </div>
     `;
   }

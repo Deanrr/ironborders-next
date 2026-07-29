@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ServerEnv } from "../../src/server/ServerEnv";
 
+const initialPublicOrigin = process.env.PUBLIC_ORIGIN;
+const initialGameServerOrigin = process.env.GAME_SERVER_ORIGIN;
+
 describe("ServerEnv.numWorkers", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -86,6 +89,38 @@ describe("ServerEnv.jwtIssuer", () => {
     expect(() => ServerEnv.jwtIssuer()).toThrow(
       "Refusing to connect to an OpenFront production audience",
     );
+  });
+});
+
+describe("ServerEnv public game origins", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    if (initialPublicOrigin === undefined) {
+      delete process.env.PUBLIC_ORIGIN;
+    } else {
+      process.env.PUBLIC_ORIGIN = initialPublicOrigin;
+    }
+    if (initialGameServerOrigin === undefined) {
+      delete process.env.GAME_SERVER_ORIGIN;
+    } else {
+      process.env.GAME_SERVER_ORIGIN = initialGameServerOrigin;
+    }
+  });
+
+  test("defaults the standalone server and its game sockets to port 3000", () => {
+    delete process.env.PUBLIC_ORIGIN;
+    delete process.env.GAME_SERVER_ORIGIN;
+
+    expect(ServerEnv.publicOrigin()).toBe("http://localhost:3000");
+    expect(ServerEnv.gameServerOrigin()).toBe("http://localhost:3000");
+  });
+
+  test("allows the Vite development client to provide its own origin", () => {
+    vi.stubEnv("PUBLIC_ORIGIN", "http://localhost:9000");
+    vi.stubEnv("GAME_SERVER_ORIGIN", "http://localhost:9000");
+
+    expect(ServerEnv.publicOrigin()).toBe("http://localhost:9000");
+    expect(ServerEnv.gameServerOrigin()).toBe("http://localhost:9000");
   });
 });
 

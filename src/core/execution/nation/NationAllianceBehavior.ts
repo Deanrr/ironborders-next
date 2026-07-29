@@ -6,10 +6,12 @@ import {
   PlayerType,
   Relation,
 } from "../../game/Game";
+import { NationDoctrine } from "../../game/NationDoctrine";
 import { PseudoRandom } from "../../PseudoRandom";
 import { assertNever } from "../../Util";
 import { AllianceExtensionExecution } from "../alliance/AllianceExtensionExecution";
 import { AllianceRequestExecution } from "../alliance/AllianceRequestExecution";
+import { DonateTroopsExecution } from "../DonateTroopExecution";
 import {
   EMOJI_CONFUSED,
   EMOJI_HANDSHAKE,
@@ -24,6 +26,7 @@ export class NationAllianceBehavior {
     private game: Game,
     private player: Player,
     private emojiBehavior: NationEmojiBehavior,
+    private doctrine?: NationDoctrine,
   ) {}
 
   handleAllianceRequests() {
@@ -62,6 +65,56 @@ export class NationAllianceBehavior {
     }
   }
 
+  /**
+   * Coalitionist nations commit a bounded reserve to an allied nation that is
+   * actively defending a front. The existing donation execution still owns
+   * cooldown, capacity, and alliance validation; this method only chooses a
+   * recipient and queues the support action.
+   */
+  supportAlliedFront(): boolean {
+    if (
+      this.doctrine !== NationDoctrine.Coalitionist ||
+      this.game.config().disableAlliances() ||
+      this.game.config().donateTroops() === false ||
+      this.game.getWinner() !== null
+    ) {
+      return false;
+    }
+
+    const alliesUnderPressure = this.player
+      .alliances()
+      .map((alliance) => alliance.other(this.player))
+      .filter(
+        (ally) =>
+          ally.isAlive() &&
+          ally.incomingAttacks().some(
+            (attack) => !attack.attacker().isFriendly(ally),
+          ) &&
+          this.player.canDonateTroops(ally),
+      )
+      .sort((a, b) => {
+        const aRatio =
+          a.troops() / Math.max(this.game.config().maxTroops(a), 1);
+        const bRatio =
+          b.troops() / Math.max(this.game.config().maxTroops(b), 1);
+        return aRatio - bRatio;
+      });
+
+    const ally = alliesUnderPressure[0];
+    if (!ally) return false;
+
+    const donorMaxTroops = this.game.config().maxTroops(this.player);
+    const reserve = donorMaxTroops * 0.55;
+    const available = this.player.troops() - reserve;
+    const troops = Math.floor(Math.min(available, donorMaxTroops * 0.15));
+    if (troops < 1) return false;
+
+    this.game.addExecution(
+      new DonateTroopsExecution(this.player, ally.id(), troops),
+    );
+    return true;
+  }
+
   maybeSendAllianceRequests(borderingEnemies: Player[]) {
     if (this.game.config().disableAlliances()) return;
 
@@ -73,7 +126,9 @@ export class NationAllianceBehavior {
 
     for (const enemy of borderingEnemies) {
       if (
-        this.random.chance(30) &&
+        this.random.chance(
+          this.doctrine === NationDoctrine.Coalitionist ? 60 : 30,
+        ) &&
         isAcceptablePlayerType(enemy) &&
         this.player.canSendAllianceRequest(enemy) &&
         this.getAllianceDecision(enemy, false)

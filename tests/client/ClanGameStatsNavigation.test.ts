@@ -15,7 +15,21 @@ vi.mock("../../src/client/Api", () => apiMockFactory());
 vi.mock("../../src/client/ClanApi", () => clanApiMockFactory());
 
 vi.mock("../../src/client/ClientEnv", () => ({
-  ClientEnv: { workerPath: vi.fn(() => "w0") },
+  ClientEnv: {
+    workerPath: vi.fn(() => "w0"),
+    runtimeFeatures: () => ({
+      accounts: true,
+      clans: true,
+      store: true,
+      subscriptions: true,
+      rewards: true,
+      ranked: true,
+      telemetry: true,
+      externalPlatforms: true,
+      leaderboards: true,
+      profiles: true,
+    }),
+  },
 }));
 
 vi.mock("../../src/client/TerrainMapFileLoader", () => ({

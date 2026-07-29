@@ -10,8 +10,10 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { FrontMomentum } from "../../../src/core/game/FrontFraming";
 import { UnitType } from "../../../src/core/game/Game";
 import { GameUpdateType } from "../../../src/core/game/GameUpdates";
+import { NationalEventType } from "../../../src/core/game/NationalFraming";
 import {
   makeEmptyGu,
   makeGameView,
@@ -852,5 +854,59 @@ describe("GameView.unitsOwnedBy — per-tick owner index", () => {
     // Returned arrays are copies — mutating them must not corrupt the index.
     alice.units().pop();
     expect(alice.units()).toHaveLength(3);
+  });
+});
+
+describe("GameView national framing snapshots", () => {
+  it("replaces stale front snapshots and expires national pulses", () => {
+    const game = makeGameView();
+    const first = makeEmptyGu(10);
+    first.updates[GameUpdateType.FrontStateReset] = [
+      { type: GameUpdateType.FrontStateReset },
+    ];
+    first.updates[GameUpdateType.FrontState] = [
+      {
+        type: GameUpdateType.FrontState,
+        frontID: "front-1",
+        name: "A - B Front 1",
+        attackerID: "a",
+        defenderID: "b",
+        positions: [4],
+        directionX: 1,
+        directionY: 0,
+        troopsCommitted: 10,
+        pressure: 0.5,
+        borderWidth: 3,
+        territoryGained: 0,
+        territoryLost: 0,
+        momentum: FrontMomentum.Stable,
+      },
+    ];
+    first.updates[GameUpdateType.NationalEvent] = [
+      {
+        type: GameUpdateType.NationalEvent,
+        event: NationalEventType.CapitalThreatened,
+        nationID: "b",
+        tile: 4,
+      },
+    ];
+    game.update(first);
+    expect(game.frontStates().map((front) => front.frontID)).toEqual([
+      "front-1",
+    ]);
+    expect(game.nationalEventPulses()).toHaveLength(1);
+
+    const second = makeEmptyGu(20);
+    second.updates[GameUpdateType.FrontStateReset] = [
+      { type: GameUpdateType.FrontStateReset },
+    ];
+    second.updates[GameUpdateType.FrontState] = [];
+    game.update(second);
+    expect(game.frontStates()).toEqual([]);
+    expect(game.nationalEventPulses()).toHaveLength(1);
+
+    const third = makeEmptyGu(50);
+    game.update(third);
+    expect(game.nationalEventPulses()).toEqual([]);
   });
 });

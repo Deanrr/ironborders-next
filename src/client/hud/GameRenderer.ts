@@ -32,6 +32,7 @@ import { ImmunityTimer } from "./layers/ImmunityTimer";
 import { InGamePromo } from "./layers/InGamePromo";
 import { MainRadialMenu } from "./layers/MainRadialMenu";
 import { MultiTabModal } from "./layers/MultiTabModal";
+import { NationalLocationsOverlay } from "./layers/NationalLocationsOverlay";
 import { NewLobbyPrompt } from "./layers/NewLobbyPrompt";
 import { PerformanceOverlay } from "./layers/PerformanceOverlay";
 import { PlayerInfoOverlay } from "./layers/PlayerInfoOverlay";
@@ -146,6 +147,16 @@ export function createRenderer(
   playerInfo.eventBus = eventBus;
   playerInfo.transform = transformHandler;
   playerInfo.game = game;
+
+  const nationalLocations = document.querySelector(
+    "national-locations-overlay",
+  ) as NationalLocationsOverlay;
+  if (!(nationalLocations instanceof NationalLocationsOverlay)) {
+    console.error("national locations overlay not found");
+  }
+  nationalLocations.eventBus = eventBus;
+  nationalLocations.game = game;
+  nationalLocations.transform = transformHandler;
 
   const winModal = document.querySelector("win-modal") as WinModal;
   if (!(winModal instanceof WinModal)) {
@@ -314,6 +325,7 @@ export function createRenderer(
     gameRightSidebar,
     controlPanel,
     playerInfo,
+    nationalLocations,
     winModal,
     newLobbyPrompt,
     replayPanel,

@@ -12,6 +12,10 @@ import {
 } from "../../game/Game";
 import { TileRef } from "../../game/GameMap";
 import { Cluster } from "../../game/TrainStation";
+import {
+  NationDoctrine,
+  structurePriorityForDoctrine,
+} from "../../game/NationDoctrine";
 import { PseudoRandom } from "../../PseudoRandom";
 import { assertNever } from "../../Util";
 import { ConstructionExecution } from "../ConstructionExecution";
@@ -148,6 +152,7 @@ export class NationStructureBehavior {
     private random: PseudoRandom,
     private game: Game,
     private player: Player,
+    private doctrine?: NationDoctrine,
   ) {}
 
   handleStructures(): boolean {
@@ -480,12 +485,7 @@ export class NationStructureBehavior {
     }
 
     // Build order for non-city structures (priority order)
-    const buildOrder: UnitType[] = [
-      UnitType.Port,
-      UnitType.Factory,
-      UnitType.SAMLauncher,
-      UnitType.MissileSilo,
-    ];
+    const buildOrder = structurePriorityForDoctrine(this.doctrine);
 
     const nukesEnabled =
       !config.isUnitDisabled(UnitType.AtomBomb) ||

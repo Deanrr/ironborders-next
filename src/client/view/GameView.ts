@@ -13,8 +13,11 @@ import {
 } from "../../core/game/Game";
 import { GameMap, TileRef } from "../../core/game/GameMap";
 import {
+  FrontStateUpdate,
+  FactionStateUpdate,
   GameUpdateType,
   GameUpdateViewData,
+  NationalStateUpdate,
   SpawnPhaseEndUpdate,
 } from "../../core/game/GameUpdates";
 import { ATTACK_DELTA_OUTGOING } from "../../core/game/GameUpdateUtils";
@@ -22,6 +25,7 @@ import {
   MotionPlanRecord,
   unpackMotionPlans,
 } from "../../core/game/MotionPlans";
+import { NationalEventType } from "../../core/game/NationalFraming";
 import { TerrainMapData } from "../../core/game/TerrainMapLoader";
 import { TerraNulliusImpl } from "../../core/game/TerraNulliusImpl";
 import { UnitGrid, UnitPredicate } from "../../core/game/UnitGrid";
@@ -111,6 +115,13 @@ export class GameView implements GameMap {
   private _firstPopulate = true;
 
   private _myPlayer: PlayerView | null = null;
+  private _nationalStates = new Map<PlayerID, NationalStateUpdate>();
+  private _frontStates = new Map<string, FrontStateUpdate>();
+  private _factionStates = new Map<string, FactionStateUpdate>();
+  private _nationalEventPulses = new Map<
+    TileRef,
+    { event: NationalEventType; untilTick: number }
+  >();
 
   // ── populateFrame dirty flags ──────────────────────────────────────────
   // The derived structures below only depend on rarely-changing player
@@ -305,6 +316,32 @@ export class GameView implements GameMap {
 
     if (gu.updates === null) {
       throw new Error("lastUpdate.updates not initialized");
+    }
+
+    for (const state of gu.updates[GameUpdateType.NationalState] ?? []) {
+      this._nationalStates.set(state.nationID, state);
+    }
+    for (const event of gu.updates[GameUpdateType.NationalEvent] ?? []) {
+      if (event.tile === undefined) continue;
+      this._nationalEventPulses.set(event.tile, {
+        event: event.event,
+        untilTick: gu.tick + 35,
+      });
+    }
+    for (const [tile, pulse] of this._nationalEventPulses) {
+      if (pulse.untilTick <= gu.tick) this._nationalEventPulses.delete(tile);
+    }
+    if ((gu.updates[GameUpdateType.FrontStateReset] ?? []).length > 0) {
+      this._frontStates.clear();
+    }
+    for (const front of gu.updates[GameUpdateType.FrontState] ?? []) {
+      this._frontStates.set(front.frontID, front);
+    }
+    if ((gu.updates[GameUpdateType.FactionStateReset] ?? []).length > 0) {
+      this._factionStates.clear();
+    }
+    for (const faction of gu.updates[GameUpdateType.FactionState] ?? []) {
+      this._factionStates.set(faction.factionID, faction);
     }
 
     const spawnPhaseEndUpdate = gu.updates[GameUpdateType.SpawnPhaseEnd][0] as
@@ -1008,6 +1045,32 @@ export class GameView implements GameMap {
 
   players(): PlayerView[] {
     return Array.from(this._players.values());
+  }
+
+  public nationalState(id: PlayerID): NationalStateUpdate | undefined {
+    return this._nationalStates.get(id);
+  }
+
+  public frontStates(): FrontStateUpdate[] {
+    return Array.from(this._frontStates.values());
+  }
+
+  public factionState(id: string): FactionStateUpdate | undefined {
+    return this._factionStates.get(id);
+  }
+
+  public factionStates(): FactionStateUpdate[] {
+    return Array.from(this._factionStates.values());
+  }
+
+  public nationalEventPulses(): Array<{
+    tile: TileRef;
+    event: NationalEventType;
+  }> {
+    return Array.from(this._nationalEventPulses, ([tile, pulse]) => ({
+      tile,
+      event: pulse.event,
+    }));
   }
 
   /**

@@ -13,6 +13,7 @@ import {
   UnitType,
 } from "../../game/Game";
 import { TileRef } from "../../game/GameMap";
+import { NationDoctrine } from "../../game/NationDoctrine";
 import { canBuildTransportShip } from "../../game/TransportShipUtils";
 import { PseudoRandom } from "../../PseudoRandom";
 import {
@@ -36,6 +37,49 @@ import { closestTwoTiles } from "../Util";
 // Reusable neighbor buffer for hot loops; the simulation is single-threaded.
 const NEIGHBOR_SCRATCH: TileRef[] = [0, 0, 0, 0];
 
+/** Find the live player occupying a nation's original capital tile. */
+export function findCapitalOccupier(
+  game: Game,
+  player: Player,
+): Player | null {
+  const capitalTile = player.spawnTile();
+  if (capitalTile === undefined) return null;
+  const owner = game.owner(capitalTile);
+  if (
+    !owner.isPlayer() ||
+    owner.id() === player.id() ||
+    player.isFriendly(owner)
+  ) {
+    return null;
+  }
+  return owner;
+}
+
+/** Stable doctrine-specific ordering for strategic enemy objectives. */
+export function prioritizeStrategicTargets(
+  enemies: Player[],
+  doctrine?: NationDoctrine,
+): Player[] {
+  if (
+    doctrine !== NationDoctrine.Naval &&
+    doctrine !== NationDoctrine.Economic
+  ) {
+    return enemies;
+  }
+  const structureType =
+    doctrine === NationDoctrine.Naval ? UnitType.Port : UnitType.Factory;
+  return enemies
+    .map((enemy, index) => ({
+      enemy,
+      index,
+      strategicUnits: enemy.unitCount(structureType),
+    }))
+    .sort(
+      (a, b) => b.strategicUnits - a.strategicUnits || a.index - b.index,
+    )
+    .map(({ enemy }) => enemy);
+}
+
 export class AiAttackBehavior {
   private botAttackTroopsSent: number = 0;
 
@@ -48,6 +92,7 @@ export class AiAttackBehavior {
     private expandRatio: number,
     private allianceBehavior?: NationAllianceBehavior,
     private emojiBehavior?: NationEmojiBehavior,
+    private doctrine?: NationDoctrine,
   ) {}
 
   maybeAttack() {
@@ -95,11 +140,13 @@ export class AiAttackBehavior {
     }
 
     if (borderingEnemies.length === 0) {
-      if (this.random.chance(5)) {
+      const navalChance = this.doctrine === NationDoctrine.Naval ? 35 : 5;
+      if (this.random.chance(navalChance)) {
         this.attackWithRandomBoat();
       }
     } else {
-      if (this.random.chance(10)) {
+      const navalChance = this.doctrine === NationDoctrine.Naval ? 25 : 10;
+      if (this.random.chance(navalChance)) {
         this.attackWithRandomBoat(borderingEnemies);
         return;
       }
@@ -233,6 +280,11 @@ export class AiAttackBehavior {
     borderingFriends: Player[],
     borderingEnemies: Player[],
   ) {
+    const liberationTarget =
+      this.player.type() === PlayerType.Nation
+        ? findCapitalOccupier(this.game, this.player)
+        : null;
+
     // In games with high starting gold, nations will quickly build a lot of cities
     // This causes them to expand slowly (cities increase max troops), and bots will steal their structures
     // In this case: Attack bots before ratio checks
@@ -240,16 +292,24 @@ export class AiAttackBehavior {
       if (this.attackBots()) return;
     }
 
-    // Save up troops until we reach the reserve ratio
-    if (!this.hasReserveRatioTroops()) return;
+    // Fortress and Economic nations hold a larger reserve before opening a
+    // new front; the same attack resolver still handles the resulting war.
+    // An occupied capital is an existential front: resistance keeps a nation
+    // attempting liberation even while its normal reserve target is unmet.
+    if (!this.hasReserveRatioTroops() && liberationTarget === null) return;
 
     // Maybe save up troops until we reach the trigger ratio
-    if (!this.hasTriggerRatioTroops() && !this.random.chance(10)) return;
+    if (
+      !this.hasTriggerRatioTroops() &&
+      liberationTarget === null &&
+      !this.random.chance(10)
+    )
+      return;
 
     // Get attack strategies in priority order based on difficulty
     const strategies = this.getAttackStrategies(
       borderingFriends,
-      borderingEnemies,
+      prioritizeStrategicTargets(borderingEnemies, this.doctrine),
     );
 
     for (const strategy of strategies) {
@@ -270,6 +330,12 @@ export class AiAttackBehavior {
         return this.sendAttack(attacker, true);
       }
       return false;
+    };
+
+    const liberate = (): boolean => {
+      if (this.player.type() !== PlayerType.Nation) return false;
+      const occupier = findCapitalOccupier(this.game, this.player);
+      return occupier === null ? false : this.sendAttack(occupier, true);
     };
 
     const bots = (): boolean => this.attackBots();
@@ -360,19 +426,35 @@ export class AiAttackBehavior {
 
     // Return strategies in order based on difficulty
     // Easy nations get the dumbest order, impossible nations get the smartest order
+    if (this.doctrine === NationDoctrine.Coalitionist) {
+      return [assist, liberate, retaliate, bots, victim, weakest, donate];
+    }
+    if (this.doctrine === NationDoctrine.Opportunist) {
+      return [
+        liberate,
+        veryWeak,
+        victim,
+        retaliate,
+        bots,
+        weakest,
+        island,
+        donate,
+      ];
+    }
+
     switch (difficulty) {
       case Difficulty.Easy:
         // prettier-ignore
-        return [nuked, bots, retaliate, assist, betray, hated, weakest];
+        return [nuked, liberate, bots, retaliate, assist, betray, hated, weakest];
       case Difficulty.Medium:
         // prettier-ignore
-        return [bots, nuked, retaliate, assist, betray, hated, afk, traitor, weakest, island, donate];
+        return [bots, nuked, liberate, retaliate, assist, betray, hated, afk, traitor, weakest, island, donate];
       case Difficulty.Hard:
         // prettier-ignore
-        return [bots, retaliate, assist, betray, nuked, traitor, afk, hated, veryWeak, victim, weakest, island, donate];
+        return [bots, liberate, retaliate, assist, betray, nuked, traitor, afk, hated, veryWeak, victim, weakest, island, donate];
       case Difficulty.Impossible:
         // prettier-ignore
-        return [retaliate, bots, veryWeak, assist, traitor, afk, betray, victim, nuked, hated, weakest, island, donate];
+        return [liberate, retaliate, bots, veryWeak, assist, traitor, afk, betray, victim, nuked, hated, weakest, island, donate];
       default:
         assertNever(difficulty);
     }
@@ -393,7 +475,15 @@ export class AiAttackBehavior {
   private hasReserveRatioTroops(): boolean {
     const maxTroops = this.game.config().maxTroops(this.player);
     const ratio = this.player.troops() / maxTroops;
-    return ratio >= this.reserveRatio;
+    const reserveMultiplier =
+      this.doctrine === NationDoctrine.Economic
+        ? 1.5
+        : this.doctrine === NationDoctrine.Fortress
+          ? 1.3
+          : this.doctrine === NationDoctrine.Expansionist
+            ? 0.75
+            : 1;
+    return ratio >= Math.min(0.95, this.reserveRatio * reserveMultiplier);
   }
 
   private hasTriggerRatioTroops(): boolean {

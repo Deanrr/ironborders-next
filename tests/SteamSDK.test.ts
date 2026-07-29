@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { steamSDK } from "../src/client/SteamSDK";
+import { loadSteamSDK, steamSDK } from "../src/client/SteamSDK";
 
-beforeEach(() => {
+beforeEach(async () => {
   delete (window as any).openfrontDesktop;
+  await loadSteamSDK();
 });
 
 describe("SteamSDK", () => {

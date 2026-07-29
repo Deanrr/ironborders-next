@@ -1,6 +1,10 @@
 import { JWK } from "jose";
 import { z } from "zod";
 import { GameEnv, parseGameEnv } from "../core/configuration/Config";
+import {
+  parseRuntimeFeaturesFromEnv,
+  RuntimeFeatures,
+} from "../core/configuration/RuntimeProfile";
 import { GameID } from "../core/Schemas";
 import { generateID, simpleHash } from "../core/Util";
 
@@ -85,7 +89,9 @@ export class ServerEnv {
   }
   static publicOrigin(): string {
     return ServerEnv.validOrigin(
-      process.env.PUBLIC_ORIGIN ?? "http://localhost:9000",
+      // A standalone server owns port 3000. `npm run dev` explicitly
+      // overrides this for the Vite client on port 9000.
+      process.env.PUBLIC_ORIGIN ?? "http://localhost:3000",
       "PUBLIC_ORIGIN",
     );
   }
@@ -105,43 +111,8 @@ export class ServerEnv {
       "ACCOUNT_API_ORIGIN",
     );
   }
-  static runtimeFeatures() {
-    const enabled = (name: string) => process.env[name] === "true";
-    const features = {
-      accounts: enabled("FEATURE_ACCOUNTS"),
-      clans: enabled("FEATURE_CLANS"),
-      store: enabled("FEATURE_STORE"),
-      subscriptions: enabled("FEATURE_SUBSCRIPTIONS"),
-      rewards: enabled("FEATURE_REWARDS"),
-      ranked: enabled("FEATURE_RANKED"),
-      telemetry: enabled("FEATURE_TELEMETRY"),
-      externalPlatforms: enabled("FEATURE_EXTERNAL_PLATFORMS"),
-      leaderboards: enabled("FEATURE_LEADERBOARDS"),
-      profiles: enabled("FEATURE_PROFILES"),
-    };
-    if (ServerEnv.env() === GameEnv.Prod) {
-      const requirements: Array<[
-        keyof typeof features,
-        Array<keyof typeof features>,
-      ]> = [
-        ["subscriptions", ["accounts", "store"]],
-        ["rewards", ["accounts"]],
-        ["clans", ["accounts"]],
-        ["ranked", ["accounts"]],
-        ["profiles", ["accounts"]],
-      ];
-      for (const [feature, dependencies] of requirements) {
-        if (
-          features[feature] &&
-          dependencies.some((dependency) => !features[dependency])
-        ) {
-          throw new Error(
-            `Invalid runtime feature profile: ${feature} requires ${dependencies.join(" + ")}`,
-          );
-        }
-      }
-    }
-    return features;
+  static runtimeFeatures(): RuntimeFeatures {
+    return parseRuntimeFeaturesFromEnv(process.env);
   }
   static jwtIssuer(): string {
     return ServerEnv.accountApiOrigin();
@@ -168,7 +139,7 @@ export class ServerEnv {
     return 100;
   }
   static gameCreationRate(): number {
-    return ServerEnv.gameEnv === GameEnv.Dev ? 5 * 1000 : 2 * 60 * 1000;
+    return ServerEnv.gameEnv === GameEnv.Dev ? 30 * 1000 : 2 * 60 * 1000;
   }
   static workerIndex(gameID: GameID): number {
     return simpleHash(gameID) % ServerEnv.numWorkers();

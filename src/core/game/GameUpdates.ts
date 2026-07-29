@@ -1,4 +1,5 @@
 import { AllPlayersStats, ClientID, Winner } from "../Schemas";
+import type { FrontEventType, FrontMomentum } from "./FrontFraming";
 import {
   EmojiMessage,
   GameUpdates,
@@ -15,6 +16,15 @@ import {
   WarshipState,
 } from "./Game";
 import { TileRef } from "./GameMap";
+import type {
+  AuthorityState,
+  NationalEventType,
+  StrategicLocation,
+  StrategicLocationType,
+} from "./NationalFraming";
+import type { NationDoctrine } from "./NationDoctrine";
+import type { FactionObjective } from "./FactionFraming";
+import type { FactionEventType } from "./FactionFraming";
 
 export interface GameUpdateViewData {
   tick: number;
@@ -97,6 +107,14 @@ export enum GameUpdateType {
   SpawnPhaseEnd,
   GamePaused,
   DonateEvent,
+  NationalState,
+  NationalEvent,
+  FrontState,
+  FrontStateReset,
+  FrontEvent,
+  FactionState,
+  FactionStateReset,
+  FactionEvent,
 }
 
 export type GameUpdate =
@@ -122,7 +140,82 @@ export type GameUpdate =
   | EmbargoUpdate
   | SpawnPhaseEndUpdate
   | GamePausedUpdate
-  | DonateEventUpdate;
+  | DonateEventUpdate
+  | NationalStateUpdate
+  | NationalEventUpdate
+  | FrontStateUpdate
+  | FrontStateResetUpdate
+  | FrontEventUpdate
+  | FactionStateUpdate
+  | FactionStateResetUpdate
+  | FactionEventUpdate;
+
+export interface FrontStateUpdate {
+  type: GameUpdateType.FrontState;
+  frontID: string;
+  name: string;
+  attackerID: PlayerID;
+  defenderID: PlayerID;
+  positions: TileRef[];
+  directionX: number;
+  directionY: number;
+  troopsCommitted: number;
+  pressure: number;
+  borderWidth: number;
+  territoryGained: number;
+  territoryLost: number;
+  momentum: FrontMomentum;
+}
+
+export interface FrontStateResetUpdate {
+  type: GameUpdateType.FrontStateReset;
+}
+
+export interface FrontEventUpdate {
+  type: GameUpdateType.FrontEvent;
+  event: FrontEventType;
+  frontID: string;
+  name: string;
+  attackerID: PlayerID;
+  defenderID: PlayerID;
+  momentum: FrontMomentum;
+  previousMomentum?: FrontMomentum;
+  tile?: TileRef;
+}
+
+export interface FactionStateUpdate {
+  type: GameUpdateType.FactionState;
+  factionID: string;
+  label: string;
+  members: PlayerID[];
+  territoryTiles: number;
+  territoryFraction: number;
+  troops: number;
+  activeFronts: number;
+  victoryProgress: number;
+  victoryReady: boolean;
+  objective: FactionObjective;
+  objectiveTile?: TileRef;
+  objectiveLocationType?: StrategicLocationType;
+  objectiveSecured: boolean;
+}
+
+export interface FactionStateResetUpdate {
+  type: GameUpdateType.FactionStateReset;
+}
+
+export interface FactionEventUpdate {
+  type: GameUpdateType.FactionEvent;
+  event: FactionEventType;
+  factionID: string;
+  label: string;
+  members: PlayerID[];
+  objective: FactionObjective;
+  victoryProgress: number;
+  objectiveTile?: TileRef;
+  objectiveLocationType?: StrategicLocationType;
+  objectiveSecured: boolean;
+}
 
 export interface BonusEventUpdate {
   type: GameUpdateType.BonusEvent;
@@ -357,4 +450,35 @@ export interface SpawnPhaseEndUpdate {
 export interface GamePausedUpdate {
   type: GameUpdateType.GamePaused;
   paused: boolean;
+}
+
+export interface NationalStateUpdate {
+  type: GameUpdateType.NationalState;
+  nationID: PlayerID;
+  capitalTile: TileRef;
+  locations: StrategicLocation[];
+  doctrine: NationDoctrine;
+  occupationResistance: number;
+  stability: number;
+  authorityState: AuthorityState;
+  territoryFraction: number;
+  capitalThreatened: boolean;
+  capitalEncircled: boolean;
+  supply: number;
+  overextension: number;
+  warExhaustion: number;
+  productionModifier: number;
+  allies: PlayerID[];
+  enemies: PlayerID[];
+  territoryDelta: number;
+}
+
+export interface NationalEventUpdate {
+  type: GameUpdateType.NationalEvent;
+  event: NationalEventType;
+  nationID: PlayerID;
+  relatedNationID?: PlayerID;
+  tile?: TileRef;
+  locationID?: string;
+  locationType?: StrategicLocationType;
 }

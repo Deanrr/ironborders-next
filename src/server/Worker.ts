@@ -48,6 +48,7 @@ const playlist = new MapPlaylist();
 // Worker setup
 export async function startWorker() {
   log.info(`Worker starting...`);
+  const features = ServerEnv.runtimeFeatures();
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -75,12 +76,14 @@ export async function startWorker() {
   // Initialize lobby service (handles WebSocket upgrade routing)
   const lobbyService = new WorkerLobbyService(server, wss, gm, log);
 
-  setTimeout(
-    () => {
-      startMatchmakingPolling(gm);
-    },
-    1000 + Math.random() * 2000,
-  );
+  if (features.ranked) {
+    setTimeout(
+      () => {
+        startMatchmakingPolling(gm);
+      },
+      1000 + Math.random() * 2000,
+    );
+  }
 
   if (ServerEnv.otelEnabled()) {
     initWorkerMetrics(gm);
@@ -92,7 +95,9 @@ export async function startWorker() {
     ServerEnv.jwtIssuer() + "/reserved_clan_tags",
     log,
   );
-  privilegeRefresher.start();
+  if (features.accounts) {
+    privilegeRefresher.start();
+  }
 
   // Middleware to handle /wX path prefix
   app.use((req, res, next) => {

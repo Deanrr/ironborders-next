@@ -7,6 +7,10 @@ import {
   JwksSchema,
   parseGameEnv,
 } from "../core/configuration/Config";
+import {
+  parseRuntimeFeatures,
+  RuntimeFeatures,
+} from "../core/configuration/RuntimeProfile";
 
 export class ClientEnv {
   private static values: ClientEnvValues | null = null;
@@ -53,6 +57,7 @@ export class ClientEnv {
       accountApiOrigin:
         bc.accountApiOrigin ?? legacyAccountApiOrigin(bc.jwtAudience),
       cdnOrigin: bc.cdnOrigin ?? "",
+      runtimeFeatures: parseRuntimeFeatures(bc.features),
       legacyOpenFrontIntegrationsEnabled:
         bc.legacyOpenFrontIntegrationsEnabled ?? false,
       // Optional: only the desktop app injects an explicit game-server host.
@@ -100,10 +105,16 @@ export class ClientEnv {
     return toWebSocketOrigin(ClientEnv.get().gameServerOrigin);
   }
   static accountApiOrigin(): string {
-    return requireOrigin(ClientEnv.get().accountApiOrigin, "ACCOUNT_API_ORIGIN");
+    return requireOrigin(
+      ClientEnv.get().accountApiOrigin,
+      "ACCOUNT_API_ORIGIN",
+    );
   }
   static cdnOrigin(): string {
     return ClientEnv.get().cdnOrigin;
+  }
+  static runtimeFeatures(): Readonly<RuntimeFeatures> {
+    return ClientEnv.get().runtimeFeatures;
   }
   static async jwkPublicKey(): Promise<JWK> {
     if (ClientEnv.publicKey) return ClientEnv.publicKey;
@@ -127,7 +138,7 @@ export class ClientEnv {
     return 100;
   }
   static gameCreationRate(): number {
-    return ClientEnv.env() === GameEnv.Dev ? 5 * 1000 : 2 * 60 * 1000;
+    return ClientEnv.env() === GameEnv.Dev ? 30 * 1000 : 2 * 60 * 1000;
   }
   static workerIndex(gameID: GameID): number {
     return simpleHash(gameID) % ClientEnv.numWorkers();
@@ -235,5 +246,6 @@ export interface ClientEnvValues {
   gameServerOrigin: string;
   accountApiOrigin: string;
   cdnOrigin: string;
+  runtimeFeatures: RuntimeFeatures;
   serverHost?: string;
 }

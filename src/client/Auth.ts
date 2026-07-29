@@ -5,9 +5,9 @@ import { TokenPayload, TokenPayloadSchema } from "../core/ApiSchemas";
 import { base64urlToUuid } from "../core/Base64";
 import { getApiBase, getAudience } from "./Api";
 import { crazyGamesSDK } from "./CrazyGamesSDK";
+import { FEATURES } from "./RuntimeProfile";
 import { steamSDK } from "./SteamSDK";
 import { generateCryptoRandomUUID } from "./Utils";
-import { FEATURES } from "./RuntimeProfile";
 
 export type UserAuth = { jwt: string; claims: TokenPayload } | false;
 
@@ -194,21 +194,23 @@ async function refreshJwt(): Promise<void> {
 }
 
 async function doRefreshJwt(): Promise<void> {
-  if (steamSDK.isOnSteam()) {
-    const ticket = await steamSDK.getTicket();
-    if (ticket) {
-      // On Steam, we exchange a Steam Web-API ticket for our session. No
-      // ticket (Steam unavailable) falls through to the guest flow below.
-      return doSteamLogin(ticket);
+  if (FEATURES.accounts && FEATURES.externalPlatforms) {
+    if (steamSDK.isOnSteam()) {
+      const ticket = await steamSDK.getTicket();
+      if (ticket) {
+        // On Steam, we exchange a Steam Web-API ticket for our session. No
+        // ticket (Steam unavailable) falls through to the guest flow below.
+        return doSteamLogin(ticket);
+      }
     }
-  }
-  if (crazyGamesSDK.isOnCrazyGames()) {
-    const token = await crazyGamesSDK.getUserToken();
-    if (token) {
-      // Signed-in CrazyGames account: exchange their token for our session.
-      // No CrazyGames account / not signed in falls through to the guest flow
-      // below.
-      return doCrazyGamesLogin(token);
+    if (crazyGamesSDK.isOnCrazyGames()) {
+      const token = await crazyGamesSDK.getUserToken();
+      if (token) {
+        // Signed-in CrazyGames account: exchange their token for our session.
+        // No CrazyGames account / not signed in falls through to the guest flow
+        // below.
+        return doCrazyGamesLogin(token);
+      }
     }
   }
   try {

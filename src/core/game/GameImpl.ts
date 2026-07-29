@@ -9,6 +9,8 @@ import { ATTACK_INDEX_SENT } from "../StatsSchemas";
 import { simpleHash } from "../Util";
 import { AllianceImpl } from "./AllianceImpl";
 import { AllianceRequestImpl } from "./AllianceRequestImpl";
+import { FrontFramingTracker } from "./FrontFraming";
+import { FactionFramingTracker } from "./FactionFraming";
 import {
   Alliance,
   AllianceRequest,
@@ -42,6 +44,7 @@ import {
 import { GameMap, TileRef } from "./GameMap";
 import { GameUpdate, GameUpdateType } from "./GameUpdates";
 import { MotionPlanRecord, packMotionPlans } from "./MotionPlans";
+import { NationalFramingTracker } from "./NationalFraming";
 import { PlayerImpl } from "./PlayerImpl";
 import { RailNetwork } from "./RailNetwork";
 import { createRailNetwork } from "./RailNetworkImpl";
@@ -116,6 +119,9 @@ export class GameImpl implements Game {
   private _waterManager: WaterManager;
   private _sharedWaterCache: SharedWaterCache;
   private _teamGameSpawnAreas: TeamGameSpawnAreas | undefined;
+  private nationalFraming: NationalFramingTracker;
+  private frontFraming: FrontFramingTracker;
+  private factionFraming: FactionFramingTracker;
 
   constructor(
     private _humans: PlayerInfo[],
@@ -144,6 +150,9 @@ export class GameImpl implements Game {
       this.populateTeams();
     }
     this.addPlayers();
+    this.nationalFraming = new NationalFramingTracker(this);
+    this.frontFraming = new FrontFramingTracker(this);
+    this.factionFraming = new FactionFramingTracker(this);
 
     console.log(
       `[GameImpl] Constructor total: ${(performance.now() - constructorStart).toFixed(0)}ms`,
@@ -498,6 +507,49 @@ export class GameImpl implements Game {
         this.attackTroopsQuads,
       );
       if (update !== null) this.addUpdate(update);
+    }
+    if (this.ticks() % 10 === 0) {
+      const nationalFraming = this.nationalFraming.evaluate();
+      for (const state of nationalFraming.states) {
+        this.addUpdate({
+          type: GameUpdateType.NationalState,
+          ...state,
+        });
+      }
+      for (const event of nationalFraming.events) {
+        this.addUpdate({
+          type: GameUpdateType.NationalEvent,
+          ...event,
+        });
+      }
+      const fronts = this.frontFraming.evaluate();
+      this.addUpdate({ type: GameUpdateType.FrontStateReset });
+      for (const front of fronts) {
+        this.addUpdate({
+          type: GameUpdateType.FrontState,
+          ...front,
+        });
+      }
+      for (const event of this.frontFraming.drainEvents()) {
+        this.addUpdate({
+          type: GameUpdateType.FrontEvent,
+          ...event,
+        });
+      }
+      this.addUpdate({ type: GameUpdateType.FactionStateReset });
+      const factions = this.factionFraming.evaluate();
+      for (const faction of factions.states) {
+        this.addUpdate({
+          type: GameUpdateType.FactionState,
+          ...faction,
+        });
+      }
+      for (const event of factions.events) {
+        this.addUpdate({
+          type: GameUpdateType.FactionEvent,
+          ...event,
+        });
+      }
     }
     if (this.ticks() % 10 === 0) {
       this.addUpdate({

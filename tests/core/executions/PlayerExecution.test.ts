@@ -82,4 +82,51 @@ describe("PlayerExecution", () => {
     expect(city.owner()).toBe(otherPlayer);
     expect(city.isActive()).toBe(true);
   });
+
+  test("human national production reflects territorial loss", () => {
+    const firstTile = game.ref(50, 50);
+    const secondTile = game.ref(51, 50);
+    player.conquer(firstTile);
+    player.conquer(secondTile);
+
+    const execution = new PlayerExecution(player);
+    execution.init(game, 0);
+    player.setTroops(0);
+    player.relinquish(secondTile);
+
+    const unrestrictedIncome = game.config().troopIncreaseRate(player);
+    execution.tick(10);
+
+    expect(player.troops()).toBeLessThan(unrestrictedIncome);
+  });
+
+  test("a nation surrenders its negligible remnant to a hostile neighbor", async () => {
+    const nationGame = await setup(
+      "big_plains",
+      { infiniteGold: true, instantBuild: true },
+      [
+        new PlayerInfo("captor", PlayerType.Human, "captor_client", "captor_id"),
+        new PlayerInfo("nation", PlayerType.Nation, null, "nation_id"),
+      ],
+    );
+    const captor = nationGame.player("captor_id");
+    const nation = nationGame.player("nation_id");
+    const land: number[] = [];
+    nationGame.map().forEachTile((tile) => {
+      if (nationGame.map().isLand(tile) && land.length < 150) land.push(tile);
+    });
+
+    for (const tile of land) captor.conquer(tile);
+    for (const tile of land.slice(0, 150)) nation.conquer(tile);
+
+    const execution = new PlayerExecution(nation);
+    nationGame.addExecution(execution);
+    nationGame.executeNextTick();
+
+    for (const tile of land.slice(0, 100)) captor.conquer(tile);
+    nationGame.executeNextTick();
+
+    expect(nation.numTilesOwned()).toBe(0);
+    expect(captor.numTilesOwned()).toBeGreaterThanOrEqual(land.length);
+  });
 });

@@ -1,6 +1,9 @@
 import { EventBus } from "../../core/EventBus";
+import { FrontEventType } from "../../core/game/FrontFraming";
+import { FactionEventType } from "../../core/game/FactionFraming";
 import { UnitType } from "../../core/game/Game";
 import { GameUpdateType } from "../../core/game/GameUpdates";
+import { NationalEventType } from "../../core/game/NationalFraming";
 import { Controller } from "../Controller";
 import { PlaySoundEffectEvent, SoundEffect } from "../sound/Sounds";
 import { GameView, UnitView } from "../view";
@@ -32,6 +35,32 @@ export class SoundEffectController implements Controller {
     for (const c of updates[GameUpdateType.ConquestEvent] ?? []) {
       if (c.conquerorId === myPlayer.id()) {
         this.emit("ka-ching");
+      }
+    }
+    for (const national of updates[GameUpdateType.NationalEvent] ?? []) {
+      if (national.nationID !== myPlayer.id()) continue;
+      if (national.event === NationalEventType.CapitalSecured) continue;
+      this.emit("message");
+    }
+    for (const front of updates[GameUpdateType.FrontEvent] ?? []) {
+      if (
+        front.attackerID !== myPlayer.id() &&
+        front.defenderID !== myPlayer.id()
+      ) {
+        continue;
+      }
+      if (front.event === FrontEventType.Ended) continue;
+      this.emit("message");
+    }
+    for (const faction of updates[GameUpdateType.FactionEvent] ?? []) {
+      if (!faction.members?.includes(myPlayer.id())) continue;
+      if (
+        faction.event === FactionEventType.VictoryReady ||
+        faction.event === FactionEventType.ObjectiveSecured ||
+        faction.event === FactionEventType.CoalitionFormed ||
+        faction.event === FactionEventType.CoalitionDisbanded
+      ) {
+        this.emit("message");
       }
     }
   }

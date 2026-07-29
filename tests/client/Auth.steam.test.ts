@@ -4,6 +4,13 @@ import { getAuthHeader, logOut } from "../../src/client/Auth";
 import { ClientEnv } from "../../src/client/ClientEnv";
 import { steamSDK } from "../../src/client/SteamSDK";
 
+vi.mock("../../src/client/RuntimeProfile", () => ({
+  FEATURES: {
+    accounts: true,
+    externalPlatforms: true,
+  },
+}));
+
 function setBootstrapConfig() {
   (window as any).BOOTSTRAP_CONFIG = {
     gameEnv: "prod",

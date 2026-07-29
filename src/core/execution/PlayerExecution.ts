@@ -1,4 +1,7 @@
-import { Config } from "../configuration/Config";
+import {
+  Config,
+  NATION_SURRENDER_TERRITORY_TILES,
+} from "../configuration/Config";
 import {
   Cell,
   Execution,
@@ -15,6 +18,15 @@ import {
   TileTraversalScratch,
 } from "../game/TileTraversalScratch";
 import { calculateBoundingBox, getMode, inscribed, simpleHash } from "../Util";
+import {
+  advanceWarExhaustion,
+  advanceOccupationResistance,
+  deriveOverextension,
+  deriveCapitalThreatened,
+  deriveNationalProductionModifier,
+  deriveOccupationResistance,
+  deriveSupply,
+} from "../game/NationalFraming";
 
 export class PlayerExecution implements Execution {
   private readonly ticksPerClusterCalc = 20;
@@ -25,6 +37,12 @@ export class PlayerExecution implements Execution {
   // Direct GameMap reference to skip the Game delegation hop in hot loops.
   private map: GameMap;
   private active = true;
+  private nationalBaselineTiles = 0;
+  private nationalBaselineInitialized = false;
+  private nationalPreviousTerritoryFraction = 1;
+  private nationalWarExhaustion = 0;
+  private nationalOccupationResistance: number | null = null;
+  private nationalProductionModifierValue = 1;
   // Reusable neighbor buffer to avoid closures/allocation in cluster checks.
   private nbuf: TileRef[] = [0, 0, 0, 0];
 
@@ -40,6 +58,14 @@ export class PlayerExecution implements Execution {
     this.config = mg.config();
     this.lastCalc =
       ticks + (simpleHash(this.player.id()) % this.ticksPerClusterCalc);
+    if (
+      this.player.type() === PlayerType.Nation ||
+      this.player.type() === PlayerType.Human
+    ) {
+      this.nationalBaselineTiles = Math.max(1, this.player.numTilesOwned());
+      this.nationalBaselineInitialized = this.player.numTilesOwned() > 0;
+      this.nationalPreviousTerritoryFraction = 1;
+    }
   }
 
   tick(ticks: number) {
@@ -83,9 +109,25 @@ export class PlayerExecution implements Execution {
       return;
     }
 
-    const troopInc = this.config.troopIncreaseRate(this.player);
+    this.surrenderNegligibleNation();
+    if (!this.player.isAlive()) {
+      this.removeOnDeath();
+      this.active = false;
+      const stillStanding = this.mg
+        .players()
+        .filter((p) => p.type() !== PlayerType.Bot).length;
+      this.mg.stats().recordDeathPosition(this.player, stillStanding + 1);
+      this.mg.stats().playerKilled(this.player, ticks);
+      return;
+    }
+
+    const productionModifier = this.nationalProductionModifier(ticks);
+    const troopInc =
+      this.config.troopIncreaseRate(this.player) * productionModifier;
     this.player.addTroops(troopInc);
-    const goldFromWorkers = this.config.goldAdditionRate(this.player);
+    const productionPercent = BigInt(Math.round(productionModifier * 100));
+    const goldFromWorkers =
+      (this.config.goldAdditionRate(this.player) * productionPercent) / 100n;
     this.player.addGold(goldFromWorkers);
 
     // Record stats
@@ -109,7 +151,7 @@ export class PlayerExecution implements Execution {
 
     if (
       ticks - this.lastCalc > this.ticksPerClusterCalc ||
-      this.player.numTilesOwned() < 100
+      this.player.numTilesOwned() < NATION_SURRENDER_TERRITORY_TILES
     ) {
       if (this.player.lastTileChange() >= this.lastCalc) {
         this.lastCalc = ticks;
@@ -120,6 +162,175 @@ export class PlayerExecution implements Execution {
           console.log(`player ${this.player.name()}, took ${end - start}ms`);
         }
       }
+    }
+  }
+
+  private nationalProductionModifier(ticks: number): number {
+    if (
+      this.player.type() !== PlayerType.Nation &&
+      this.player.type() !== PlayerType.Human
+    ) {
+      return 1;
+    }
+    if (ticks % 10 !== 0) return this.nationalProductionModifierValue;
+    if (!this.nationalBaselineInitialized && this.player.numTilesOwned() > 0) {
+      this.nationalBaselineTiles = this.player.numTilesOwned();
+      this.nationalBaselineInitialized = true;
+    }
+    const baseline = Math.max(1, this.nationalBaselineTiles);
+    const territoryFraction = Math.min(
+      1,
+      this.player.numTilesOwned() / baseline,
+    );
+    const activeIncomingAttacks = this.player
+      .incomingAttacks()
+      .filter((attack) => attack.isActive());
+    const activeOutgoingAttacks = this.player
+      .outgoingAttacks()
+      .filter((attack) => attack.isActive());
+    const committedTroops = activeOutgoingAttacks.reduce(
+      (total, attack) => total + attack.troops(),
+      0,
+    );
+    const overextension = deriveOverextension({
+      territoryTiles: this.player.numTilesOwned(),
+      baselineTerritoryTiles: baseline,
+      activeOutgoingAttacks: activeOutgoingAttacks.length,
+      committedTroops,
+      troopCapacity: this.config.maxTroops(this.player),
+    });
+    const capitalTile = this.player.spawnTile();
+    let capitalThreatened = false;
+    let capitalEncircled = false;
+    let capitalOccupied = false;
+    if (capitalTile !== undefined) {
+      capitalThreatened = deriveCapitalThreatened(
+        this.mg,
+        this.player,
+        capitalTile,
+      );
+      const neighbors: TileRef[] = [0, 0, 0, 0];
+      const neighborCount = this.mg.neighbors4(capitalTile, neighbors);
+      let hostileNeighbors = 0;
+      for (let i = 0; i < neighborCount; i++) {
+        const owner = this.mg.owner(neighbors[i]);
+        if (
+          owner.isPlayer() &&
+          owner !== this.player &&
+          !this.player.isFriendly(owner)
+        ) {
+          hostileNeighbors++;
+        }
+      }
+      capitalEncircled =
+        neighborCount > 0 && hostileNeighbors === neighborCount;
+      const capitalOwner = this.mg.owner(capitalTile);
+      capitalOccupied =
+        !capitalOwner.isPlayer() || capitalOwner.id() !== this.player.id();
+    }
+    const resistanceTarget = deriveOccupationResistance({
+      territoryFraction,
+      capitalOwned: !capitalOccupied,
+      capitalThreatened,
+      capitalEncircled,
+      hasActiveIncomingAttack: activeIncomingAttacks.length > 0,
+    });
+    const occupationResistance = advanceOccupationResistance(
+      this.nationalOccupationResistance,
+      resistanceTarget,
+      !capitalOccupied &&
+        activeIncomingAttacks.length === 0 &&
+        activeOutgoingAttacks.length === 0,
+    );
+    this.nationalOccupationResistance = occupationResistance;
+    const supply = deriveSupply({
+      territoryFraction,
+      capitalThreatened,
+      capitalEncircled,
+      activeIncomingAttacks: activeIncomingAttacks.length,
+      activeOutgoingAttacks: activeOutgoingAttacks.length,
+      committedTroops,
+      troopCapacity: this.config.maxTroops(this.player),
+      overextension,
+    });
+    this.nationalWarExhaustion = advanceWarExhaustion(
+      this.nationalWarExhaustion,
+      activeIncomingAttacks.length + activeOutgoingAttacks.length > 0,
+      supply,
+      this.nationalPreviousTerritoryFraction - territoryFraction,
+    );
+    this.nationalPreviousTerritoryFraction = territoryFraction;
+    this.nationalProductionModifierValue = deriveNationalProductionModifier({
+      territoryFraction,
+      activeIncomingAttacks: activeIncomingAttacks.length,
+      activeOutgoingAttacks: activeOutgoingAttacks.length,
+      industrialRegions: this.player.unitCount(UnitType.Factory),
+      majorCities: this.player.unitCount(UnitType.City),
+      warExhaustion: this.nationalWarExhaustion,
+      capitalThreatened,
+      capitalEncircled,
+      capitalOccupied,
+      occupationResistance,
+      overextension,
+    });
+    return this.nationalProductionModifierValue;
+  }
+
+  /**
+   * Resolve a nation that has become a negligible remnant. This is checked
+   * from the player execution rather than only after an attack tick, so an
+   * isolated sliver cannot remain indefinitely after the front moves on.
+   */
+  private surrenderNegligibleNation(): void {
+    if (
+      this.player.type() !== PlayerType.Nation ||
+      !this.nationalBaselineInitialized ||
+      this.nationalBaselineTiles <= NATION_SURRENDER_TERRITORY_TILES ||
+      this.player.numTilesOwned() === 0 ||
+      this.player.numTilesOwned() > NATION_SURRENDER_TERRITORY_TILES
+    ) {
+      return;
+    }
+
+    const capturing = this.getCapturingPlayer(
+      Array.from(this.player.borderTiles()),
+    );
+    if (capturing === null) return;
+
+    const targetTiles = Array.from(this.player.tiles());
+
+    // Transfer the remnant through existing borders. Repeat because moving
+    // one tile changes which neighboring tiles are adjacent to the captor.
+    for (let i = 0; i < 10 && this.player.isAlive(); i++) {
+      for (const tile of targetTiles) {
+        if (this.mg.owner(tile) !== this.player) continue;
+
+        let captured = false;
+        this.mg.forEachNeighbor(tile, (neighbor) => {
+          if (captured) return;
+          const owner = this.mg.owner(neighbor);
+          if (owner === capturing) {
+            capturing.conquer(tile);
+            captured = true;
+            return;
+          }
+          if (
+            owner.isPlayer() &&
+            owner !== this.player &&
+            !owner.isFriendly(this.player)
+          ) {
+            owner.conquer(tile);
+            captured = true;
+          }
+        });
+      }
+    }
+
+    // Only record the conquest after every remnant tile has actually moved.
+    // A disconnected tile with no hostile border remains a live nation rather
+    // than producing a false elimination event.
+    if (!this.player.isAlive()) {
+      this.mg.conquerPlayer(capturing, this.player);
     }
   }
 

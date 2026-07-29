@@ -1,45 +1,25 @@
-interface SteamBridge {
-  getAuthTicket(): Promise<string | null>;
-  getUser(): Promise<{ steamId: string; name: string } | null>;
-}
+import type { SteamSDK as SteamSDKAdapter } from "./SteamSDKAdapter";
 
-// window.openfrontDesktop is declared `unknown` by DesktopShell.ts (kept loose
-// there on purpose). We know the shape the Electron preload exposes, so narrow
-// it locally rather than re-declaring the global (a second `declare global`
-// with a different type triggers TS2717).
-function steamBridge(): SteamBridge | undefined {
-  const desktop = window.openfrontDesktop as
-    | { steam?: SteamBridge }
-    | undefined;
-  return desktop?.steam;
-}
-
-// Thin renderer wrapper over the desktop shell's Steam bridge. Mirrors
-// CrazyGamesSDK; the native work lives in the Electron main process.
 class SteamSDK {
+  private adapter: SteamSDKAdapter | null = null;
+
+  install(adapter: SteamSDKAdapter): void {
+    this.adapter = adapter;
+  }
   isOnSteam(): boolean {
-    return steamBridge() !== undefined;
+    return this.adapter?.isOnSteam() ?? false;
   }
-
-  async getTicket(): Promise<string | null> {
-    const bridge = steamBridge();
-    if (!bridge) return null;
-    try {
-      return await bridge.getAuthTicket();
-    } catch {
-      return null;
-    }
+  getTicket(): Promise<string | null> {
+    return this.adapter?.getTicket() ?? Promise.resolve(null);
   }
-
-  async getUser(): Promise<{ steamId: string; name: string } | null> {
-    const bridge = steamBridge();
-    if (!bridge) return null;
-    try {
-      return await bridge.getUser();
-    } catch {
-      return null;
-    }
+  getUser(): Promise<{ steamId: string; name: string } | null> {
+    return this.adapter?.getUser() ?? Promise.resolve(null);
   }
 }
 
 export const steamSDK = new SteamSDK();
+
+export async function loadSteamSDK(): Promise<void> {
+  const { SteamSDK: Adapter } = await import("./SteamSDKAdapter");
+  steamSDK.install(new Adapter());
+}

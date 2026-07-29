@@ -38,7 +38,7 @@ declare global {
       publicOrigin?: string;
       gameServerOrigin?: string;
       accountApiOrigin?: string;
-      features?: Record<string, boolean>;
+      features?: Record<string, unknown>;
       // Desktop-only: explicit game-server host for the WebSocket origin.
       // Absent on the web build (client falls back to same-origin location).
       serverHost?: string;
@@ -88,6 +88,13 @@ export const JwksSchema = z.object({
 
 /** SAM launcher construction duration in ticks (non-instant-build). */
 export const SAM_CONSTRUCTION_TICKS = 30 * 10;
+
+/**
+ * Nations with fewer than this many tiles left are treated as remnants.
+ * Once they have lost territory, the nearest hostile neighbor can force a
+ * surrender so the match does not require hunting every last tile.
+ */
+export const NATION_SURRENDER_TERRITORY_TILES = 100;
 
 // Doomsday Clock tunables (anti-stall). Off unless enabled in GameConfig.
 // Times in seconds. The required map share rises in waves (levels + times in

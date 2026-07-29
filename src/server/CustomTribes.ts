@@ -27,6 +27,9 @@ export interface TribePoolPlayer {
 export async function fetchCustomTribes(
   players: TribePoolPlayer[],
 ): Promise<Tribe[]> {
+  if (!ServerEnv.runtimeFeatures().accounts) {
+    return [];
+  }
   const response = await fetch(`${ServerEnv.jwtIssuer()}/custom_tribes`, {
     method: "POST",
     signal: AbortSignal.timeout(1500),

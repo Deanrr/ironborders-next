@@ -3,6 +3,8 @@ import { PlaySoundEffectEvent } from "../../../src/client/sound/Sounds";
 import { EventBus } from "../../../src/core/EventBus";
 import { UnitType } from "../../../src/core/game/Game";
 import { GameUpdateType } from "../../../src/core/game/GameUpdates";
+import { FactionEventType } from "../../../src/core/game/FactionFraming";
+import { NationalEventType } from "../../../src/core/game/NationalFraming";
 
 describe("SoundEffectController", () => {
   let eventBus: EventBus;
@@ -75,5 +77,43 @@ describe("SoundEffectController", () => {
     };
     tickWithUnits(intercepted);
     expect(played).toEqual([]);
+  });
+
+  it("plays a message cue for a national milestone affecting the player", () => {
+    const myPlayer = { id: () => "nation-1" };
+    game.myPlayer = () => myPlayer;
+    game.updatesSinceLastTick = () => ({
+      [GameUpdateType.NationalEvent]: [
+        {
+          type: GameUpdateType.NationalEvent,
+          event: NationalEventType.CapitalThreatened,
+          nationID: "nation-1",
+          tile: 4,
+        },
+      ],
+    });
+    controller.tick();
+    expect(played).toEqual(["message"]);
+  });
+
+  it("plays a message cue when the player's coalition forms", () => {
+    const myPlayer = { id: () => "nation-1" };
+    game.myPlayer = () => myPlayer;
+    game.updatesSinceLastTick = () => ({
+      [GameUpdateType.FactionEvent]: [
+        {
+          type: GameUpdateType.FactionEvent,
+          event: FactionEventType.CoalitionFormed,
+          factionID: "coalition:nation-1+nation-2",
+          label: "Alliance Coalition",
+          members: ["nation-1", "nation-2"],
+          objective: "hold_frontier",
+          victoryProgress: 0.2,
+          objectiveSecured: false,
+        },
+      ],
+    });
+    controller.tick();
+    expect(played).toEqual(["message"]);
   });
 });

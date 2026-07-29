@@ -1,4 +1,5 @@
 import { renderTroops } from "../../client/Utils";
+import { NATION_SURRENDER_TERRITORY_TILES } from "../configuration/Config";
 import {
   Attack,
   Difficulty,
@@ -383,7 +384,13 @@ export class AttackExecution implements Execution {
   }
 
   private handleDeadDefender() {
-    if (!(this.target.isPlayer() && this.target.numTilesOwned() < 100)) return;
+    if (
+      !(
+        this.target.isPlayer() &&
+        this.target.numTilesOwned() < NATION_SURRENDER_TERRITORY_TILES
+      )
+    )
+      return;
     const target: Player = this.target;
 
     this.mg.conquerPlayer(this._owner, target);
